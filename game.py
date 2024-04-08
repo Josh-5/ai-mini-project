@@ -1,5 +1,6 @@
 #follow to install pytience
 #https://pypi.org/project/pytience/
+# Here's another option to run the solitaire game
 
 #follow this to install pytorch
 #https://pytorch.org/get-started/locally/
