@@ -8,20 +8,26 @@
 # Use subprocess to interact: https://docs.python.org/3/library/subprocess.html
 
 import subprocess
-import os
+import time
+
+def delay(game):
+    game.stdin.flush()
+    time.sleep(1)
 
 def main():
-    inpipe = os.open("input.txt", os.O_RDONLY | os.O_CREAT)
-    outpipe = os.open("output.txt", os.O_WRONLY | os.O_CREAT)
-    print(inpipe)
-    print(outpipe)
-    game = subprocess.Popen(["klondike"], stdin=inpipe, stdout=outpipe)
     """
     https://docs.python.org/3/library/subprocess.html#subprocess.Popen.communicate
-    """
 
-    os.close(inpipe)
-    os.close(outpipe)
+    Moves can be written as long as stdin is open. 
+
+    """
+    game = subprocess.Popen(["klondike"], stdin=subprocess.PIPE, text=True)
+    game.stdin.write("t 1 0 0\n")
+    delay(game)
+    game.stdin.write("t 0 0 1\n")
+    delay(game)
+    game.stdin.close()
+    game.wait()
 
 
 if __name__ == "__main__":
