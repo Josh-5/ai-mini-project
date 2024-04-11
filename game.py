@@ -10,6 +10,9 @@
 import subprocess
 import time
 
+def move(game, origin:int, card:int, pile:int):
+    game.stdin.write("t " + str(origin) + " " + str(card) + " " + str(pile) + "\n")
+
 def delay(game):
     game.stdin.flush()
     time.sleep(1)
@@ -22,9 +25,9 @@ def main():
 
     """
     game = subprocess.Popen(["klondike"], stdin=subprocess.PIPE, text=True)
-    game.stdin.write("t 1 0 0\n")
+    move(game, 1,0,0)
     delay(game)
-    game.stdin.write("t 0 0 1\n")
+    move(game, 0,0,1)
     delay(game)
     game.stdin.close()
     game.wait()
