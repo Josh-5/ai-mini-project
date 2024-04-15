@@ -12,22 +12,22 @@ import time
 
 # Move all cards to foundations if they're all face up
 def solve(game):
-    game.stdin.write("solve")
+    game.stdin.write("solve\n")
     delay(game)
 
 # Move a card from the origin tableau to the (suit) foundation
 def foundation(game, suit:str, origin:int):
-    game.stdin.write("foundation " + suit + " " + str(origin))
+    game.stdin.write("foundation " + suit + " " + str(origin) + "\n")
     delay(game)
 
 # Draw a card from the stock
 def deal(game):
-    game.stdin.write("deal")
+    game.stdin.write("deal\n")
     delay(game)
 
 # Move the top card from the stock to a destination tableau
 def waste(game, destination:int):
-    game.stdin.write("waste " + str(destination))
+    game.stdin.write("waste " + str(destination) + "\n")
     delay(game)
 
 # Undo the most recent move
@@ -50,6 +50,16 @@ def delay(game):
     game.stdin.flush()
     time.sleep(1)
 
+def startup():
+    solitaire = subprocess.Popen(["klondike"], stdin=subprocess.PIPE, text=True)
+    restart(solitaire)
+    return solitaire
+
+def shutdown(game):
+    game.stdin.write("quit\n")
+    game.stdin.close()
+    game.wait()
+
 def main():
     """
     https://docs.python.org/3/library/subprocess.html#subprocess.Popen.communicate
@@ -58,8 +68,9 @@ def main():
 
     """
     # Startup
-    game = subprocess.Popen(["klondike"], stdin=subprocess.PIPE, text=True)
-    restart(game)
+    game = startup()
+
+
 
 
     move(game, 1,0,0)
@@ -70,8 +81,7 @@ def main():
 
 
     # Shutdown
-    game.stdin.close()
-    game.wait()
+    shutdown(game)
 
 
 if __name__ == "__main__":
