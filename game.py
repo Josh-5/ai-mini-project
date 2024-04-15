@@ -13,6 +13,7 @@ import subprocess
 import os
 import time
 import json
+import pytience.games.solitaire.klondike as klondike
 
 # Move all cards to foundations if they're all face up
 def solve(game):
@@ -71,7 +72,8 @@ def dump(game):
     # delay(game)
     # json = process.stdout.readline()
     # delay(game)
-    return pytience.klondike.dump()
+    klondikeGame = klondike.KlondikeGame()
+    return klondikeGame.dump()
     
 
 def main():
@@ -87,7 +89,7 @@ def main():
 
     # Game
     json = dump(game)
-    print(json)
+    
 
 
 
@@ -96,6 +98,13 @@ def main():
     # Shutdown
     shutdown(game)
 
+
+    print()
+    print()
+    print()
+    print()
+    print()
+    print(json)
 
 if __name__ == "__main__":
     main()
