@@ -7,8 +7,12 @@
 
 # Use subprocess to interact: https://docs.python.org/3/library/subprocess.html
 
+# The game uses _dump to give a JSON representation of the game. https://docs.python.org/3/library/json.html
+
 import subprocess
+import os
 import time
+import json
 
 # Move all cards to foundations if they're all face up
 def solve(game):
@@ -51,14 +55,24 @@ def delay(game):
     time.sleep(1)
 
 def startup():
-    solitaire = subprocess.Popen(["klondike"], stdin=subprocess.PIPE, text=True)
-    restart(solitaire)
+    solitaire = subprocess.Popen(["klondike"], stdin=subprocess.PIPE,text=True)
+    # restart(solitaire)
     return solitaire
 
 def shutdown(game):
     game.stdin.write("quit\n")
     game.stdin.close()
     game.wait()
+
+def dump(game):
+    # use _dump to get the game state
+    # This shows hidden cards. Make sure to not use the cards with prefix |.
+    # game.stdin.write("_dump\n")
+    # delay(game)
+    # json = process.stdout.readline()
+    # delay(game)
+    return pytience.klondike.dump()
+    
 
 def main():
     """
@@ -71,10 +85,9 @@ def main():
     game = startup()
 
 
-
-
-    move(game, 1,0,0)
-    move(game, 0,0,1)
+    # Game
+    json = dump(game)
+    print(json)
 
 
 
