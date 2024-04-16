@@ -1,110 +1,49 @@
 #follow to install pytience
 #https://pypi.org/project/pytience/
-# Here's another option to run the solitaire game
 
-#follow this to install pytorch
-#https://pytorch.org/get-started/locally/
+from pytience.cmd.klondike import KlondikeCmd
 
-# Use subprocess to interact: https://docs.python.org/3/library/subprocess.html
-
-# The game uses _dump to give a JSON representation of the game. https://docs.python.org/3/library/json.html
-
-import subprocess
-import os
-import time
-import json
-import pytience.games.solitaire.klondike as klondike
-
-# Move all cards to foundations if they're all face up
-def solve(game):
-    game.stdin.write("solve\n")
-    delay(game)
-
-# Move a card from the origin tableau to the (suit) foundation
-def foundation(game, suit:str, origin:int):
-    game.stdin.write("foundation " + suit + " " + str(origin) + "\n")
-    delay(game)
-
-# Draw a card from the stock
-def deal(game):
-    game.stdin.write("deal\n")
-    delay(game)
-
-# Move the top card from the stock to a destination tableau
-def waste(game, destination:int):
-    game.stdin.write("waste " + str(destination) + "\n")
-    delay(game)
-
-# Undo the most recent move
-def undo(game):
-    game.stdin.write("undo\n")
-    delay(game)
-
-# Creates a new game
-def restart(game):
-    game.stdin.write("new\n")
-    delay(game)
-
-# Move the card at the index "card" from the origin tableau to the destination tableau
-def move(game, origin:int, card:int, destination:int):
-    game.stdin.write("t " + str(origin) + " " + str(card) + " " + str(destination) + "\n")
-    delay(game)
-
-# Internal sleeping to show the moves more clearly
-def delay(game):
-    game.stdin.flush()
-    time.sleep(1)
-
-def startup():
-    solitaire = subprocess.Popen(["klondike"], stdin=subprocess.PIPE,text=True)
-    # restart(solitaire)
-    return solitaire
-
-def shutdown(game):
-    game.stdin.write("quit\n")
-    game.stdin.close()
-    game.wait()
-
-def dump(game):
-    # use _dump to get the game state
-    # This shows hidden cards. Make sure to not use the cards with prefix |.
-    # game.stdin.write("_dump\n")
-    # delay(game)
-    # json = process.stdout.readline()
-    # delay(game)
-    klondikeGame = klondike.KlondikeGame()
-    return klondikeGame.dump()
-    
 
 def main():
     """
-    https://docs.python.org/3/library/subprocess.html#subprocess.Popen.communicate
-
-    Moves can be written as long as stdin is open. 
-
-    """
-    # Startup
-    game = startup()
-
-
-    # Game
-    json = dump(game)
+    Useful functions for game:
+        game.deal() - deals a card into waste
+        game.adjust_score(self, points: int) - could be useful for qlearning
+        game.select_foundation(self, suit: Suit, tableau_destination_pile)
+            move a card from the suited foundation to the tableau
+        game.select_waste(self, destination pile) - Move the top waste card to the destination
+        game.select_tableau(self, pile_num, card_num, destination_pile_num)
+            takes a pile index, card index, and a destination index. Moves the card at card_num
+            from source to destination
+        game.is_solvable() - checks if all cards are face up
+        game.solve() if is solvable, moves all cards to foundations
+        game.dump() returns a json object representing the game:
+            {
+                "score": self.score,
+                "stock": self.stock.dump(),
+                "waste": list(map(str, self.waste)),
+                "foundation": self.foundation.dump(),
+                "tableau": self.tableau.dump(),
+                "undo_stack": self.dump_undo_stack()
+            }
+    
+    Useful functions for cmd:
+        cmd.print_game() - prints game to gui
     
 
+    NOTE: If your klondike game is the same after running python game.py multiple times, delete the save file in .pytience.
+    NOTE 2: game.dump() is a json. Treat it like a dict. Doing print(dump["tableau"]["piles"][0]) gets you the 0th pile in the piles in the tableau.
+    """
 
+    # Startup
+    cmd = KlondikeCmd()
+    game = cmd.klondike
 
+    
+    cmd.print_game()
+    dump = game.dump()
+    print(dump["tableau"]["piles"][0])
 
-
-    # Shutdown
-    shutdown(game)
-
-
-    print()
-    print()
-    print()
-    print()
-    print()
-    print(json)
 
 if __name__ == "__main__":
     main()
