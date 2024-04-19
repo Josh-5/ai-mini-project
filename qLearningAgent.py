@@ -285,18 +285,30 @@ class QLearningAgent():
         else:
             return self.cardValues[card[0:len(card) - 1]]
 
-    def getDestinations(self, sourcePile, i, state):
+    def getDestinationActions(self, sourcePile, i, state):
         actions = []
         placeholderAction = ""
         sourceCard = sourcePile[i]
+
+        # Check the tableau piles
         for destPile in state["tableau"]["piles"]:
             # make sure the source and destination pile aren't the same
             if sourcePile != destPile: 
                 destCard = destPile[len(destPile) - 1]
-                if self.color(sourceCard) != self.color(destCard) and self.cardValue(sourceCard) == self.cardValue(destCard) - 1:
+                if color(sourceCard) != color(destCard) and cardValue(sourceCard) == cardValue(destCard) - 1:
                     #TODO: construct action
                     actions.append(placeholderAction)
-        #TODO
+        
+        # Check the foundation piles
+        for destPile in state["foundations"]["piles"]:
+            # make sure the source and destination pile aren't the same
+            if sourcePile != destPile: 
+                destCard = destPile[len(destPile) - 1]
+                if sourceCard[len(sourceCard) - 1] == destCard[len(destCard) - 1] and cardValue(sourceCard) == cardValue(destCard) + 1:
+                    #TODO: construct action
+                    actions.append(placeholderAction)
+
+        return actions
 
     def getLegalActions(self,state):
         """
@@ -304,17 +316,21 @@ class QLearningAgent():
           state. This is what you should use to
           obtain legal actions for a state
         """
-        legalActions = []
-        for destPile in state["tableau"]["piles"]:
-            for sourcePile in state["tableau"]["piles"]:
-                if sourcePile != destPile:
-                    for i in range(len(sourcePile)):
-                        # Check if the card is hidden
-                        if sourcePile[i][0] != '|': 
-                            legalActions.append(self.getDestinations(sourcePile, i, state))
-  
-        return legalActions
+        legalActions = self.getDestinationActions(state["stock"]["cards"][len(state["stock"]["cards"]) - 1])
 
+        legalActions.append(self.getDestinationActions(state["waste"]["cards"][len(state["waste"]["cards"]) - 1]))
+
+        for sourcePile in state["tableau"]["piles"]:
+            for i in range(len(sourcePile)):
+                # Check if the card is hidden
+                if sourcePile[i][0] != '|': 
+                    legalActions.append(self.getDestinationActions(sourcePile, i, state))
+        
+        for sourcePile in state["foundations"]["piles"]:
+            legalActions.append(self.getDestinationActions(sourcePile, i, state))
+
+
+        return legalActions
 
 
     def interpretAction(self, action):
