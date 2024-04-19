@@ -164,15 +164,17 @@ class ReinforcementAgent(ValueEstimationAgent):
                     #TODO: construct action
                     actions.append(placeholderAction)
 
+        return actions
+
     def getLegalActions(self,state):
         """
           Get the actions available for a given
           state. This is what you should use to
           obtain legal actions for a state
         """
-        legalActions = self.getDestinationActions(state["stock"]["cards"][len(state["stock"]["cards"]) - 1])
+        legalActions = self.getDestinationActions(state["stock"]["cards"], len(state["stock"]["cards"]) - 1, state)
 
-        legalActions.append(self.getDestinationActions(state["waste"]["cards"][len(state["waste"]["cards"]) - 1]))
+        legalActions.append(self.getDestinationActions(state["waste"]["cards"], len(state["waste"]["cards"]) - 1, state))
 
         for sourcePile in state["tableau"]["piles"]:
             for i in range(len(sourcePile)):
@@ -182,10 +184,6 @@ class ReinforcementAgent(ValueEstimationAgent):
         
         for sourcePile in state["foundations"]["piles"]:
             legalActions.append(self.getDestinationActions(sourcePile, i, state))
-
-        
-
-
 
         return legalActions
 
