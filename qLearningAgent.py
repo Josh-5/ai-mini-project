@@ -247,19 +247,76 @@ class QLearningAgent():
         self.alpha = float(alpha)
         self.discount = float(gamma)
 
-
+        self.cardValues = {
+            "A":0,
+            "1":1,
+            "2":2,
+            "3":3,
+            "4":4,
+            "5":5,
+            "6":6,
+            "7":7,
+            "8":8,
+            "9":9,
+            "10":10,
+            "J":11,
+            "Q":12,
+            "K":13
+        }
 
         self.suits = ["♦","♥","♠","♣"]
 
         self.values = Counter()
 
         self.cmd = KlondikeCmd()
-        self.game = self.cmd.klondike()
+        self.game = self.cmd.klondike
         
         
         #States are tracked by GameState objects GameState (from either {pacman, capture, sonar}.py) ALT: get set of legal moves from pytience
 
-    
+
+    # red = true, black = false
+    def color(self, card) -> bool:
+        return card[len(card) - 1] == '♥' or card[len(card) - 1] == '♦'
+
+    def cardValue(self, card) -> int:
+        if card[0] == '|':
+            return self.cardValues[card[1:len(card) - 1]]
+        else:
+            return self.cardValues[card[0:len(card) - 1]]
+
+    def getDestinations(self, sourcePile, i, state):
+        actions = []
+        placeholderAction = ""
+        sourceCard = sourcePile[i]
+        for destPile in state["tableau"]["piles"]:
+            # make sure the source and destination pile aren't the same
+            if sourcePile != destPile: 
+                destCard = destPile[len(destPile) - 1]
+                if self.color(sourceCard) != self.color(destCard) and self.cardValue(sourceCard) == self.cardValue(destCard) - 1:
+                    #TODO: construct action
+                    actions.append(placeholderAction)
+        #TODO
+
+    def getLegalActions(self,state):
+        """
+          Get the actions available for a given
+          state. This is what you should use to
+          obtain legal actions for a state
+        """
+        legalActions = []
+        for destPile in state["tableau"]["piles"]:
+            for sourcePile in state["tableau"]["piles"]:
+                if sourcePile != destPile:
+                    for i in range(len(sourcePile)):
+                        # Check if the card is hidden
+                        if sourcePile[i][0] != '|': 
+                            legalActions.append(self.getDestinations(sourcePile, i, state))
+  
+        return legalActions
+
+
+
     def interpretAction(self, action):
 
         parse = action.split()
@@ -304,7 +361,7 @@ class QLearningAgent():
                 maxQ = q
         return maxQ
 
-     def computeActionFromQValues(self, state):
+    def computeActionFromQValues(self, state):
         """
           Compute the best action to take in a state.  Note that if there
           are no legal actions, which is the case at the terminal state,
@@ -379,14 +436,12 @@ class QLearningAgent():
 
 
     def run(self):
+        while (not self.game.is_solved() and not self.getLegalActions(self.game.dump()) == []):
+            self.interpretAction(self.computeActionFromQValues(self.game.dump()))
+
+
         
 
-
-
-
-
-
-     
     # Training
 
 
@@ -446,7 +501,7 @@ class QLearningAgent():
         self.lastState = state
         self.lastAction = action
 
-       def final(self, state):
+    def final(self, state):
         """
           Called by Pacman game at the terminal state
         """
@@ -490,3 +545,9 @@ class QLearningAgent():
     
 
 
+def main():
+    agent = QLearningAgent()
+    agent.run()
+
+if __name__ == "__main__":
+    main()
