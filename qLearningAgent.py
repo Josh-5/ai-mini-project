@@ -241,6 +241,7 @@ class QLearningAgent():
 
         self.actionFn = actionFn #Action fn gives the set of legal moves at the current state
 
+        self.suits = ["♦","♥","♠","♣"]
 
         self.episodesSoFar = 0
         self.accumTrainRewards = 0.0
@@ -261,6 +262,22 @@ class QLearningAgent():
         #States are tracked by GameState objects GameState (from either {pacman, capture, sonar}.py) ALT: get set of legal moves from pytience
 
     
+    def interpretAction(self, action):
+
+        parse = action.split()
+
+        if (action[0] == "D"):
+            game.deal()
+        elif (action[0] == "F"):
+            self.game.select_foundation(self.game, int(parse[1]), int(parse[2]))
+        elif (action[0] == "W"):
+            self.game.select_waste(self.game, parse[1])
+        elif (action[0] == "T"):
+            self.game.select_tableau(self.game, int(parse[1]), int(parse[2]), int(parse[3]))
+        elif (action[0] == "S"):
+            self.game.solve(self.game)
+
+
     def getQValue(self, state, action):
         """
         Should return Q(state,action)
@@ -366,6 +383,11 @@ class QLearningAgent():
 
 
 
+
+
+
+
+     
     #This is where i think we dont nee dthings anymore
 
 
