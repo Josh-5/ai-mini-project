@@ -265,51 +265,102 @@ class QLearningAgent():
         """
         Should return Q(state,action)
         """
-        util.raiseNotDefined()
+        return self.values[(state,action)] # self.values should contain Q-values
 
-    def getValue(self, state):
+    def computeValueFromQValues(self, state):
         """
-        What is the value of this state under the best action?
-        Concretely, this is given by
-
-        V(s) = max_{a in actions} Q(s,a)
+          Returns max_action Q(state,action)
+          where the max is over legal actions.  Note that if
+          there are no legal actions, which is the case at the
+          terminal state, you should return a value of 0.0.
         """
-        util.raiseNotDefined()
+        "*** YOUR CODE HERE ***"
+        legalActions = self.getLegalActions(state)
 
-    def getPolicy(self, state):
+        # If there are no legal actions (terminal state), return 0.0
+        if (len(legalActions) == 0):
+            return 0.0
+        
+        # Loop through all legal actions, find and return the greatest Q value
+        maxQ = -999999
+        for action in legalActions:
+            q = self.getQValue(state,action)
+            if (q > maxQ):
+                maxQ = q
+        return maxQ
+
+     def computeActionFromQValues(self, state):
         """
-        What is the best action to take in the state. Note that because
-        we might want to explore, this might not coincide with getAction
-        Concretely, this is given by
-
-        policy(s) = arg_max_{a in actions} Q(s,a)
-
-        If many actions achieve the maximal Q-value,
-        it doesn't matter which is selected.
+          Compute the best action to take in a state.  Note that if there
+          are no legal actions, which is the case at the terminal state,
+          you should return None.
         """
-        util.raiseNotDefined()
+        "*** YOUR CODE HERE ***"
+        legalActions = self.getLegalActions(state)
+        bestAction = None
 
+        # If there are no legal actions (terminal state), return 0.0
+        if (len(legalActions) == 0):
+            return None
+        
+        # The best action has the greatest Q value. 
+        # Loop through all legal actions, find and return the action with the greatest Q value
+        bestQ = -999999
+        for action in legalActions:
+            q = self.getQValue(state, action)
+            if (q > bestQ):
+                bestAction = action
+                bestQ = q
+        return bestAction
+            
     def getAction(self, state):
         """
-        state: can call state.getLegalActions()
-        Choose an action and return it.
+          Compute the action to take in the current state.  With
+          probability self.epsilon, we should take a random action and
+          take the best policy action otherwise.  Note that if there are
+          no legal actions, which is the case at the terminal state, you
+          should choose None as the action.
+          HINT: You might want to use util.flipCoin(prob)
+          HINT: To pick randomly from a list, use random.choice(list)
         """
-        util.raiseNotDefined()
-    
-    def update(self, state, action, nextState, reward):
-        """
-                This class will call this function, which you write, after
-                observing a transition and reward
-        """
-        util.raiseNotDefined()
+        # Pick Action
+        legalActions = self.getLegalActions(state)
+        action = None
+        "*** YOUR CODE HERE ***"
+        # If there are no legal actions, return None
+        if (len(legalActions) == 0):
+            return None
+        
+        # Pick the best move
+        action = self.computeActionFromQValues(state)
 
-    def getLegalActions(self,state):
+        # Epsilon chance of picking a random move
+        if (util.flipCoin(self.epsilon)):
+            action = random.choice(legalActions)
+            
+        return action
+
+    def update(self, state, action, nextState, reward: float):
         """
-          Get the actions available for a given
-          state. This is what you should use to
-          obtain legal actions for a state
+          The parent class calls this to observe a
+          state = action => nextState and reward transition.
+          You should do your Q-Value update here
+          NOTE: You should never call this function,
+          it will be called on your behalf
         """
-        return self.actionFn(state)
+        "*** YOUR CODE HERE ***"
+        # Apply the update formula for TD Q-learning:
+        # Q(s,a)updated = (1-alpha)Q(s,a) + alpha(sample)
+        # sample = R(s,a,s') + gamma*max(Q(s',a') of all a' in actions)
+
+        sample = (reward + (self.discount*self.computeValueFromQValues(nextState)))
+        self.values[(state,action)] = (1-self.alpha)*self.getQValue(state,action) + (self.alpha*sample)
+
+    def getPolicy(self, state):
+        return self.computeActionFromQValues(state)
+
+    def getValue(self, state):
+        return self.computeValueFromQValues(state)
 
 
 
