@@ -280,10 +280,15 @@ class QLearningAgent():
         return card[len(card) - 1] == '♥' or card[len(card) - 1] == '♦'
 
     def cardValue(self, card) -> int:
+        # if card[0] == '|':
+        #     return self.cardValues[card[1:len(card)-1]]
+        # else:
+        #     return self.cardValues[card[0:len(card)-1]]
+
         if card[0] == '|':
-            return self.cardValues[card[1:len(card) - 1]]
+            return self.cardValues[card[1:len(card)-1]]
         else:
-            return self.cardValues[card[0:len(card) - 1]]
+            return self.cardValues[card.strip(("♦♥♠♣"))]
 
     def getDestinationActions(self, sourcePile, i, state):
         actions = []
@@ -295,16 +300,16 @@ class QLearningAgent():
             # make sure the source and destination pile aren't the same
             if sourcePile != destPile: 
                 destCard = destPile[len(destPile) - 1]
-                if color(sourceCard) != color(destCard) and cardValue(sourceCard) == cardValue(destCard) - 1:
+                if self.color(sourceCard) != self.color(destCard) and self.cardValue(sourceCard) == self.cardValue(destCard) - 1:
                     #TODO: construct action
                     actions.append(placeholderAction)
         
         # Check the foundation piles
-        for destPile in state["foundations"]["piles"]:
+        for destPile in state["foundation"]["piles"]:
             # make sure the source and destination pile aren't the same
             if sourcePile != destPile: 
                 destCard = destPile[len(destPile) - 1]
-                if sourceCard[len(sourceCard) - 1] == destCard[len(destCard) - 1] and cardValue(sourceCard) == cardValue(destCard) + 1:
+                if sourceCard[len(sourceCard) - 1] == destCard[len(destCard) - 1] and self.cardValue(sourceCard) == self.cardValue(destCard) + 1:
                     #TODO: construct action
                     actions.append(placeholderAction)
 
@@ -316,9 +321,9 @@ class QLearningAgent():
           state. This is what you should use to
           obtain legal actions for a state
         """
-        legalActions = self.getDestinationActions(state["stock"]["cards"][len(state["stock"]["cards"]) - 1])
+        legalActions = self.getDestinationActions(state["stock"]["cards"], len(state["stock"]["cards"]) - 1, state)
 
-        legalActions.append(self.getDestinationActions(state["waste"]["cards"][len(state["waste"]["cards"]) - 1]))
+        legalActions.append(self.getDestinationActions(state["waste"]["cards"], len(state["waste"]["cards"]) - 1, state))
 
         for sourcePile in state["tableau"]["piles"]:
             for i in range(len(sourcePile)):
@@ -328,7 +333,6 @@ class QLearningAgent():
         
         for sourcePile in state["foundations"]["piles"]:
             legalActions.append(self.getDestinationActions(sourcePile, i, state))
-
 
         return legalActions
 
