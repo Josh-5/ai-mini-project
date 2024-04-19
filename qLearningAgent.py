@@ -9,8 +9,6 @@ from pytience.cmd.klondike import KlondikeCmd
 """
 
 class QLearningAgent():
-
-
     def __init__(self):
         self.cmd = KlondikeCmd()
         self.game = self.cmd.klondike()

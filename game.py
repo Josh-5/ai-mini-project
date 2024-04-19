@@ -42,7 +42,7 @@ def main():
     
     cmd.print_game()
     dump = game.dump()
-    print(dump["tableau"]["piles"][0])
+    print(dump)
 
 
 if __name__ == "__main__":
