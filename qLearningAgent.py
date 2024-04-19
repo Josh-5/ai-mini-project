@@ -5,7 +5,7 @@ from pytience.cmd.klondike import KlondikeCmd
 #See game.py for comments about how to use this.
 
 """
-
+Insert a notice that parts of this code comes from Berkeley
 """
 
 class Counter(dict):
@@ -239,7 +239,7 @@ class QLearningAgent():
         if actionFn == None:
             actionFn = lambda state: state.getLegalActions()
 
-        self.actionFn = actionFn
+        self.actionFn = actionFn #Action fn gives the set of legal moves at the current state
 
 
         self.episodesSoFar = 0
@@ -256,7 +256,9 @@ class QLearningAgent():
 
         self.cmd = KlondikeCmd()
         self.game = self.cmd.klondike()
-        self.states = [] #TODO
+        
+        
+        #States are tracked by GameState objects GameState (from either {pacman, capture, sonar}.py) ALT: get set of legal moves from pytience
 
     
     def getQValue(self, state, action):
@@ -308,9 +310,6 @@ class QLearningAgent():
           obtain legal actions for a state
         """
         return self.actionFn(state)
-    
-
-
 
 
 
