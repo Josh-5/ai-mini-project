@@ -1,6 +1,7 @@
 #follow to install pytience
 #https://pypi.org/project/pytience/
 
+import random
 from pytience.cmd.klondike import KlondikeCmd
 #See game.py for comments about how to use this.
 
@@ -290,7 +291,7 @@ class QLearningAgent():
                 maxQ = q
         return maxQ
 
-     def computeActionFromQValues(self, state):
+    def computeActionFromQValues(self, state):
         """
           Compute the best action to take in a state.  Note that if there
           are no legal actions, which is the case at the terminal state,
