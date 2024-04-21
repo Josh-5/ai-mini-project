@@ -17,7 +17,6 @@ from pytience.games.solitaire import CARD_VALUES
 
 import util
 import featureExtractors
-# See game.py for comments about how to use this.
 
 
 class QLearningAgent():
@@ -40,15 +39,9 @@ class QLearningAgent():
         self.epsilon = float(epsilon)
         self.alpha = float(alpha)
         self.discount = float(gamma)
-
-
-
         self.values = util.Counter()
-
         self.cmd = KlondikeCmd()
         self.game = self.cmd.klondike
-        
-        
         # States are tracked by GameState objects GameState (from either {pacman, capture, sonar}.py) ALT: get set of legal moves from pytience
 
     def getDestinationActions(self, sourceTableau, cardIndex):
