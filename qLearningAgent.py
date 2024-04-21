@@ -3,6 +3,9 @@
 
 from pytience.cmd.klondike import KlondikeCmd
 from pytience.cards import deck
+from pytience.games.solitaire import tableau
+from pytience.games.solitaire import CARD_VALUES
+
 import functools
 #See game.py for comments about how to use this.
 
@@ -249,24 +252,7 @@ class QLearningAgent():
         self.alpha = float(alpha)
         self.discount = float(gamma)
 
-        self.cardValues = {
-            "A":0,
-            "1":1,
-            "2":2,
-            "3":3,
-            "4":4,
-            "5":5,
-            "6":6,
-            "7":7,
-            "8":8,
-            "9":9,
-            "10":10,
-            "J":11,
-            "Q":12,
-            "K":13
-        }
 
-        self.suits = ["♦","♥","♠","♣"]
 
         self.values = Counter()
 
@@ -276,67 +262,34 @@ class QLearningAgent():
         
         #States are tracked by GameState objects GameState (from either {pacman, capture, sonar}.py) ALT: get set of legal moves from pytience
 
-
-    # red = true, black = false
-    def color(self, card) -> bool:
-        return card[len(card) - 1] == '♥' or card[len(card) - 1] == '♦'
-
-    def cardValue(self, card) -> int:
-        if card[0] == '|':
-            # print(card)
-            # print(self.cardValues[card[1:len(card)-1]])
-            return self.cardValues[card[1:len(card)-1]]
-        else:
-            # print(card)
-            # print(self.cardValues[card[0:len(card)-1]])
-            return self.cardValues[card[0:len(card)-1]]
-
-    def getDestinationActions(self, sourcePile, i, state):
+    def getDestinationActions(self, sourceTableau, i, state):
         actions = []
         placeholderAction = ""
-        sourceCard = sourcePile[i]
+        sourceCard:deck.Card = sourceTableau[i]
 
-        # Check the tableau piles
-        for destPile in state["tableau"]["piles"]:
+        # Check the tableau piles. destTableau is type tableau.Tableau
+        for destTableau in self.game.tableau.piles:
             # make sure the source and destination pile aren't the same
-            if sourcePile != destPile: 
-                destCard = destPile[len(destPile) - 1]
-                if self.color(sourceCard) != self.color(destCard) and self.cardValue(sourceCard) == self.cardValue(destCard) - 1:
+            if sourceTableau != destTableau: 
+                destCard:deck.Card = destTableau[len(destTableau) - 1]
+                # If the colors alternate, and the source card is one more than the last card
+                if sourceCard.suit.color() != destCard.suit.color() \
+                and CARD_VALUES[sourceCard.pip] == CARD_VALUES[destCard.pip] + 1:
                     #TODO: construct action
                     actions.append(placeholderAction)
         
 
+        # Check the foundation pile
+        destFoundation = self.game.foundation.piles[sourceCard.suit]
+        if sourceCard.pip == deck.Pip.Ace \
+        or CARD_VALUES[sourceCard.pip] == CARD_VALUES[destFoundation[len(destFoundation) - 1].pip]:
 
-        """
-        def put(self, card: Card):
-        if card.is_concealed:
-            raise ConcealedCardNotAllowedException('Foundation cards must be revealed')
-        pile = self.piles[card.suit]
-        if card.pip == Pip.Ace:
-            pile.append(card)
-            self.undo_stack.append(UndoAction(self.undo_put, [str(card.suit)]))
-        elif not pile:
-            raise IllegalFoundationBuildOrderException('Foundation cards must be built sequentially per suit.')
-        else:
-            value = CARD_VALUES[card.pip]
-            top_value = CARD_VALUES[pile[-1].pip]
-            if value != top_value + 1:
-                raise IllegalFoundationBuildOrderException('Foundation cards must be build sequentially per suit.')
-            pile.append(card)
-            self.undo_stack.append(UndoAction(self.undo_put, [str(card.suit)]))
-        """
-        # Check the foundation piles
-        for destPile in state["foundation"]["piles"]:
-            
-            # make sure the source and destination pile aren't the same
-            if sourcePile != destPile:
-                destCard = destPile[len(destPile) - 1]
-                if sourceCard[len(sourceCard) - 1] == destCard[len(destCard) - 1] and self.cardValue(sourceCard) == self.cardValue(destCard) + 1:
-                    #TODO: construct action
-                    actions.append(placeholderAction)
+            actions.append(placeholderAction)
+
 
         return actions
 
+    #TODO adapt
     def getLegalActions(self,state):
         """
           Get the actions available for a given
@@ -364,7 +317,7 @@ class QLearningAgent():
         parse = action.split()
 
         if (action[0] == "D"):
-            game.deal()
+            self.game.deal()
         elif (action[0] == "F"):
             self.game.select_foundation(self.game, int(parse[1]), int(parse[2]))
         elif (action[0] == "W"):
@@ -374,13 +327,14 @@ class QLearningAgent():
         elif (action[0] == "S"):
             self.game.solve(self.game)
 
-
+    #TODO verify
     def getQValue(self, state, action):
         """
         Should return Q(state,action)
         """
         return self.values[(state,action)] # self.values should contain Q-values
 
+    #TODO verify
     def computeValueFromQValues(self, state):
         """
           Returns max_action Q(state,action)
@@ -403,6 +357,7 @@ class QLearningAgent():
                 maxQ = q
         return maxQ
 
+    #TODO verify
     def computeActionFromQValues(self, state):
         """
           Compute the best action to take in a state.  Note that if there
@@ -427,6 +382,7 @@ class QLearningAgent():
                 bestQ = q
         return bestAction
             
+    #TODO verify
     def getAction(self, state):
         """
           Compute the action to take in the current state.  With
@@ -453,7 +409,7 @@ class QLearningAgent():
             action = random.choice(legalActions)
             
         return action
-
+    #TODO verify
     def update(self, state, action, nextState, reward: float):
         """
           The parent class calls this to observe a
