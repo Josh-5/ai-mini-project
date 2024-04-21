@@ -51,52 +51,54 @@ class QLearningAgent():
         
         # States are tracked by GameState objects GameState (from either {pacman, capture, sonar}.py) ALT: get set of legal moves from pytience
 
-    def getDestinationActions(self, sourceTableau, i, state):
+    def getDestinationActions(self, sourceTableau, cardIndex):
         actions = []
         placeholderAction = ""
-        sourceCard:deck.Card = sourceTableau[i]
 
-        # Check the tableau piles. destTableau is type tableau.Tableau
-        for destTableau in self.game.tableau.piles:
-            # make sure the source and destination pile aren't the same
-            if sourceTableau != destTableau: 
-                destCard:deck.Card = destTableau[len(destTableau) - 1]
-                # If the colors alternate, and the source card is one more than the last card
-                if sourceCard.suit.color() != destCard.suit.color() \
-                and CARD_VALUES[sourceCard.pip] == CARD_VALUES[destCard.pip] + 1:
-                    #TODO: construct action
-                    actions.append(placeholderAction)
+        if not isinstance(sourceTableau,deck.Suit):
+            sourceCard:deck.Card = sourceTableau[cardIndex]
+            # Check the tableau piles. destTableau is type tableau.Tableau
+            for destTableau in self.game.tableau.piles:
+                # make sure the source and destination pile aren't the same
+                if sourceTableau != destTableau: 
+                    destCard:deck.Card = destTableau[len(destTableau) - 1]
+                    # If the colors alternate, and the source card is one more than the last card
+                    if sourceCard.suit.color != destCard.suit.color \
+                    and CARD_VALUES[sourceCard.pip] == CARD_VALUES[destCard.pip] + 1:
+                        #TODO: construct action
+                        actions.append(placeholderAction)
         
 
-        # Check the foundation pile
-        destFoundation = self.game.foundation.piles[sourceCard.suit]
-        if sourceCard.pip == deck.Pip.Ace \
-        or CARD_VALUES[sourceCard.pip] == CARD_VALUES[destFoundation[len(destFoundation) - 1].pip]:
-
-            actions.append(placeholderAction)
-
+            # Check the foundation pile
+            destFoundation = self.game.foundation.piles[sourceCard.suit]
+            if sourceCard.pip == deck.Pip.Ace:
+                actions.append(placeholderAction)
+            elif len(destFoundation) != 0 \
+            and CARD_VALUES[sourceCard.pip] == CARD_VALUES[destFoundation[ len(destFoundation) - 1 ].pip]:
+                actions.append(placeholderAction)
 
         return actions
 
-    # TODO adapt
-    def getLegalActions(self,state):
+    #TODO add legal actions for stock and waste.
+    def getLegalActions(self):
         """
           Get the actions available for a given
           state. This is what you should use to
           obtain legal actions for a state
         """
-        legalActions = self.getDestinationActions(state["stock"]["cards"], len(state["stock"]["cards"]) - 1, state)
+        # legalActions = self.getDestinationActions(self.game.stock.cards len(state["stock"]["cards"]) - 1)
 
-        legalActions.append(self.getDestinationActions(state["waste"]["cards"], len(state["waste"]["cards"]) - 1, state))
+        # legalActions.append(self.getDestinationActions(state["waste"]["cards"], len(state["waste"]["cards"]) - 1))
 
-        for sourcePile in state["tableau"]["piles"]:
+        legalActions = []
+        for sourcePile in self.game.tableau.piles:
             for i in range(len(sourcePile)):
                 # Check if the card is hidden
-                if sourcePile[i][0] != '|': 
-                    legalActions.append(self.getDestinationActions(sourcePile, i, state))
+                if not sourcePile[i].is_revealed:
+                    legalActions.append(self.getDestinationActions(sourcePile, i))
         
-        for sourcePile in state["foundations"]["piles"]:
-            legalActions.append(self.getDestinationActions(sourcePile, i, state))
+        for sourcePile in self.game.foundation.piles:
+            legalActions.append(self.getDestinationActions(sourcePile, i))
 
         return legalActions
 
@@ -117,14 +119,14 @@ class QLearningAgent():
             self.game.solve(self.game)
 
     #TODO verify
-    def getQValue(self, state, action):
+    def getQValue(self, action):
         """
         Should return Q(state,action)
         """
-        return self.values[(state,action)] # self.values should contain Q-values
+        return self.values[action] # self.values should contain Q-values
 
     #TODO verify
-    def computeValueFromQValues(self, state):
+    def computeValueFromQValues(self):
         """
           Returns max_action Q(state,action)
           where the max is over legal actions.  Note that if
@@ -132,7 +134,7 @@ class QLearningAgent():
           terminal state, you should return a value of 0.0.
         """
         "*** YOUR CODE HERE ***"
-        legalActions = self.getLegalActions(state)
+        legalActions = self.getLegalActions()
 
         # If there are no legal actions (terminal state), return 0.0
         if (len(legalActions) == 0):
@@ -141,20 +143,21 @@ class QLearningAgent():
         # Loop through all legal actions, find and return the greatest Q value
         maxQ = -999999
         for action in legalActions:
-            q = self.getQValue(state,action)
+            q = self.getQValue(action)
             if (q > maxQ):
                 maxQ = q
         return maxQ
 
-    # TODO verify
-    def computeActionFromQValues(self, state):
+    #TODO verify
+    def computeActionFromQValues(self):
         """
           Compute the best action to take in a state.  Note that if there
           are no legal actions, which is the case at the terminal state,
           you should return None.
         """
         "*** YOUR CODE HERE ***"
-        legalActions = self.getLegalActions(state)
+        legalActions = self.getLegalActions()
+        print(legalActions)
         bestAction = None
 
         # If there are no legal actions (terminal state), return 0.0
@@ -165,7 +168,7 @@ class QLearningAgent():
         # Loop through all legal actions, find and return the action with the greatest Q value
         bestQ = -999999
         for action in legalActions:
-            q = self.getQValue(state, action)
+            q = self.getQValue(action)
             if (q > bestQ):
                 bestAction = action
                 bestQ = q
@@ -183,7 +186,7 @@ class QLearningAgent():
           HINT: To pick randomly from a list, use random.choice(list)
         """
         # Pick Action
-        legalActions = self.getLegalActions(state)
+        legalActions = self.getLegalActions()
         action = None
         "*** YOUR CODE HERE ***"
         # If there are no legal actions, return None
@@ -191,15 +194,15 @@ class QLearningAgent():
             return None
         
         # Pick the best move
-        action = self.computeActionFromQValues(state)
+        action = self.computeActionFromQValues()
 
         # Epsilon chance of picking a random move
-        if (util.flipCoin(self.epsilon)):
+        if (self.flipCoin(self.epsilon)):
             action = random.choice(legalActions)
             
         return action
-    # TODO verify
-    def update(self, state, action, nextState, reward: float):
+    #TODO verify
+    def update(self, action, nextState, reward: float):
         """
           The parent class calls this to observe a
           state = action => nextState and reward transition.
@@ -223,8 +226,8 @@ class QLearningAgent():
 
 
     def run(self):
-        while (not self.game.is_solved() and not self.getLegalActions(self.game.dump()) == []):
-            self.interpretAction(self.computeActionFromQValues(self.game.dump()))
+        while (not self.game.is_solved() and not self.getLegalActions() == []):
+            self.interpretAction(self.computeActionFromQValues())
 
 
     # Training
