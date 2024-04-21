@@ -3,6 +3,11 @@
 
 import random
 from pytience.cmd.klondike import KlondikeCmd
+from pytience.cards import deck
+from pytience.games.solitaire import tableau
+from pytience.games.solitaire import CARD_VALUES
+
+import functools
 #See game.py for comments about how to use this.
 
 """
@@ -240,35 +245,98 @@ class QLearningAgent():
         """
         if actionFn == None:
             actionFn = lambda state: state.getLegalActions()
-
         self.actionFn = actionFn #Action fn gives the set of legal moves at the current state
-
-
         self.episodesSoFar = 0
         self.accumTrainRewards = 0.0
         self.accumTestRewards = 0.0
-
-        
         self.numTraining = int(numTraining)
         self.epsilon = float(epsilon)
         self.alpha = float(alpha)
         self.discount = float(gamma)
 
+
+
         self.values = Counter()
 
         self.cmd = KlondikeCmd()
-        self.game = self.cmd.klondike()
+        self.game = self.cmd.klondike
         
         
         #States are tracked by GameState objects GameState (from either {pacman, capture, sonar}.py) ALT: get set of legal moves from pytience
 
-    
+    def getDestinationActions(self, sourceTableau, i, state):
+        actions = []
+        placeholderAction = ""
+        sourceCard:deck.Card = sourceTableau[i]
+
+        # Check the tableau piles. destTableau is type tableau.Tableau
+        for destTableau in self.game.tableau.piles:
+            # make sure the source and destination pile aren't the same
+            if sourceTableau != destTableau: 
+                destCard:deck.Card = destTableau[len(destTableau) - 1]
+                # If the colors alternate, and the source card is one more than the last card
+                if sourceCard.suit.color() != destCard.suit.color() \
+                and CARD_VALUES[sourceCard.pip] == CARD_VALUES[destCard.pip] + 1:
+                    #TODO: construct action
+                    actions.append(placeholderAction)
+        
+
+        # Check the foundation pile
+        destFoundation = self.game.foundation.piles[sourceCard.suit]
+        if sourceCard.pip == deck.Pip.Ace \
+        or CARD_VALUES[sourceCard.pip] == CARD_VALUES[destFoundation[len(destFoundation) - 1].pip]:
+
+            actions.append(placeholderAction)
+
+
+        return actions
+
+    #TODO adapt
+    def getLegalActions(self,state):
+        """
+          Get the actions available for a given
+          state. This is what you should use to
+          obtain legal actions for a state
+        """
+        legalActions = self.getDestinationActions(state["stock"]["cards"], len(state["stock"]["cards"]) - 1, state)
+
+        legalActions.append(self.getDestinationActions(state["waste"]["cards"], len(state["waste"]["cards"]) - 1, state))
+
+        for sourcePile in state["tableau"]["piles"]:
+            for i in range(len(sourcePile)):
+                # Check if the card is hidden
+                if sourcePile[i][0] != '|': 
+                    legalActions.append(self.getDestinationActions(sourcePile, i, state))
+        
+        for sourcePile in state["foundations"]["piles"]:
+            legalActions.append(self.getDestinationActions(sourcePile, i, state))
+
+        return legalActions
+
+
+    def interpretAction(self, action):
+
+        parse = action.split()
+
+        if (action[0] == "D"):
+            self.game.deal()
+        elif (action[0] == "F"):
+            self.game.select_foundation(self.game, int(parse[1]), int(parse[2]))
+        elif (action[0] == "W"):
+            self.game.select_waste(self.game, parse[1])
+        elif (action[0] == "T"):
+            self.game.select_tableau(self.game, int(parse[1]), int(parse[2]), int(parse[3]))
+        elif (action[0] == "S"):
+            self.game.solve(self.game)
+
+    #TODO verify
     def getQValue(self, state, action):
         """
         Should return Q(state,action)
         """
         return self.values[(state,action)] # self.values should contain Q-values
 
+    #TODO verify
     def computeValueFromQValues(self, state):
         """
           Returns max_action Q(state,action)
@@ -291,6 +359,7 @@ class QLearningAgent():
                 maxQ = q
         return maxQ
 
+    #TODO verify
     def computeActionFromQValues(self, state):
         """
           Compute the best action to take in a state.  Note that if there
@@ -315,6 +384,7 @@ class QLearningAgent():
                 bestQ = q
         return bestAction
             
+    #TODO verify
     def getAction(self, state):
         """
           Compute the action to take in the current state.  With
@@ -341,7 +411,7 @@ class QLearningAgent():
             action = random.choice(legalActions)
             
         return action
-
+    #TODO verify
     def update(self, state, action, nextState, reward: float):
         """
           The parent class calls this to observe a
@@ -365,10 +435,14 @@ class QLearningAgent():
         return self.computeValueFromQValues(state)
 
 
+    def run(self):
+        while (not self.game.is_solved() and not self.getLegalActions(self.game.dump()) == []):
+            self.interpretAction(self.computeActionFromQValues(self.game.dump()))
 
 
+        
 
-    #This is where i think we dont nee dthings anymore
+    # Training
 
 
     def observeTransition(self, state,action,nextState,deltaReward):
@@ -427,8 +501,53 @@ class QLearningAgent():
         self.lastState = state
         self.lastAction = action
 
+    def final(self, state):
+        """
+          Called by Pacman game at the terminal state
+        """
+        deltaReward = state.getScore() - self.lastState.getScore()
+        self.observeTransition(self.lastState, self.lastAction, state, deltaReward)
+        self.stopEpisode()
+
+        # Make sure we have this var
+        if not 'episodeStartTime' in self.__dict__:
+            self.episodeStartTime = time.time()
+        if not 'lastWindowAccumRewards' in self.__dict__:
+            self.lastWindowAccumRewards = 0.0
+        self.lastWindowAccumRewards += state.getScore()
+
+        NUM_EPS_UPDATE = 100
+        if self.episodesSoFar % NUM_EPS_UPDATE == 0:
+            print('Reinforcement Learning Status:')
+            windowAvg = self.lastWindowAccumRewards / float(NUM_EPS_UPDATE)
+            if self.episodesSoFar <= self.numTraining:
+                trainAvg = self.accumTrainRewards / float(self.episodesSoFar)
+                print('\tCompleted %d out of %d training episodes' % (
+                       self.episodesSoFar,self.numTraining))
+                print('\tAverage Rewards over all training: %.2f' % (
+                        trainAvg))
+            else:
+                testAvg = float(self.accumTestRewards) / (self.episodesSoFar - self.numTraining)
+                print('\tCompleted %d test episodes' % (self.episodesSoFar - self.numTraining))
+                print('\tAverage Rewards over testing: %.2f' % testAvg)
+            print('\tAverage Rewards for last %d episodes: %.2f'  % (
+                    NUM_EPS_UPDATE,windowAvg))
+            print('\tEpisode took %.2f seconds' % (time.time() - self.episodeStartTime))
+            self.lastWindowAccumRewards = 0.0
+            self.episodeStartTime = time.time()
+
+        if self.episodesSoFar == self.numTraining:
+            msg = 'Training Done (turning off epsilon and alpha)'
+            print('%s\n%s' % (msg,'-' * len(msg)))
+
     # Pacman specifically hasmore functions to track the current state/observation, initial state, and final state.
 
     
 
 
+def main():
+    agent = QLearningAgent()
+    agent.run()
+
+if __name__ == "__main__":
+    main()
