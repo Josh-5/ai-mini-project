@@ -115,13 +115,6 @@ class QLearningAgent():
             self.game.solve(self.game)
 
 
-
-
-
-
-
-
-
     #TODO verify
     def getQValue(self, action):
         """
@@ -234,7 +227,7 @@ class QLearningAgent():
 
 
     # Training
-    def observeTransition(self, state,action,nextState,deltaReward):
+    def observeTransition(self, state, action, nextState, deltaReward):
         """
             Called by environment to inform agent that a transition has
             been observed. This will result in a call to self.update
