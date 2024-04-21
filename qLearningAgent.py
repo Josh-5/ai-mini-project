@@ -42,8 +42,12 @@ class QLearningAgent():
         self.qValues = util.Counter()
 
         self.cmd = KlondikeCmd()
-        self.game = self.cmd.klondike
         # States are tracked by GameState objects GameState (from either {pacman, capture, sonar}.py) ALT: get set of legal moves from pytience
+
+    # Check whether the agent has lost the game
+    def hasLost() -> bool:
+        # TODO implement
+        util.raiseNotDefined()
 
     def getDestinationActions(self, sourceTableau, cardIndex):
         actions = []
