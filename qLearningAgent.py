@@ -2,6 +2,8 @@
 #https://pypi.org/project/pytience/
 
 from pytience.cmd.klondike import KlondikeCmd
+from pytience.cards import deck
+import functools
 #See game.py for comments about how to use this.
 
 """
@@ -280,15 +282,14 @@ class QLearningAgent():
         return card[len(card) - 1] == '♥' or card[len(card) - 1] == '♦'
 
     def cardValue(self, card) -> int:
-        # if card[0] == '|':
-        #     return self.cardValues[card[1:len(card)-1]]
-        # else:
-        #     return self.cardValues[card[0:len(card)-1]]
-
         if card[0] == '|':
+            # print(card)
+            # print(self.cardValues[card[1:len(card)-1]])
             return self.cardValues[card[1:len(card)-1]]
         else:
-            return self.cardValues[card.strip(("♦♥♠♣"))]
+            # print(card)
+            # print(self.cardValues[card[0:len(card)-1]])
+            return self.cardValues[card[0:len(card)-1]]
 
     def getDestinationActions(self, sourcePile, i, state):
         actions = []
@@ -304,10 +305,31 @@ class QLearningAgent():
                     #TODO: construct action
                     actions.append(placeholderAction)
         
+
+
+        """
+        def put(self, card: Card):
+        if card.is_concealed:
+            raise ConcealedCardNotAllowedException('Foundation cards must be revealed')
+        pile = self.piles[card.suit]
+        if card.pip == Pip.Ace:
+            pile.append(card)
+            self.undo_stack.append(UndoAction(self.undo_put, [str(card.suit)]))
+        elif not pile:
+            raise IllegalFoundationBuildOrderException('Foundation cards must be built sequentially per suit.')
+        else:
+            value = CARD_VALUES[card.pip]
+            top_value = CARD_VALUES[pile[-1].pip]
+            if value != top_value + 1:
+                raise IllegalFoundationBuildOrderException('Foundation cards must be build sequentially per suit.')
+            pile.append(card)
+            self.undo_stack.append(UndoAction(self.undo_put, [str(card.suit)]))
+        """
         # Check the foundation piles
         for destPile in state["foundation"]["piles"]:
+            
             # make sure the source and destination pile aren't the same
-            if sourcePile != destPile: 
+            if sourcePile != destPile:
                 destCard = destPile[len(destPile) - 1]
                 if sourceCard[len(sourceCard) - 1] == destCard[len(destCard) - 1] and self.cardValue(sourceCard) == self.cardValue(destCard) + 1:
                     #TODO: construct action
