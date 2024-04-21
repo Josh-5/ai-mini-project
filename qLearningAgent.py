@@ -10,6 +10,7 @@
 # For more info, see http://inst.eecs.berkeley.edu/~cs188/sp09/pacman.html
 
 import random
+import time
 from pytience.cmd.klondike import KlondikeCmd
 from pytience.cards import deck
 from pytience.games.solitaire import tableau
@@ -39,7 +40,9 @@ class QLearningAgent():
         self.epsilon = float(epsilon)
         self.alpha = float(alpha)
         self.discount = float(gamma)
-        self.values = util.Counter()
+
+        self.qValues = util.Counter()
+
         self.cmd = KlondikeCmd()
         self.game = self.cmd.klondike
         # States are tracked by GameState objects GameState (from either {pacman, capture, sonar}.py) ALT: get set of legal moves from pytience
@@ -111,12 +114,20 @@ class QLearningAgent():
         elif (action[0] == "S"):
             self.game.solve(self.game)
 
+
+
+
+
+
+
+
+
     #TODO verify
     def getQValue(self, action):
         """
         Should return Q(state,action)
         """
-        return self.values[action] # self.values should contain Q-values
+        return self.qValues[action] # self.qValues should contain Q-values
 
     #TODO verify
     def computeValueFromQValues(self):
@@ -190,7 +201,7 @@ class QLearningAgent():
         action = self.computeActionFromQValues()
 
         # Epsilon chance of picking a random move
-        if (self.flipCoin(self.epsilon)):
+        if (util.flipCoin(self.epsilon)):
             action = random.choice(legalActions)
             
         return action
@@ -209,13 +220,12 @@ class QLearningAgent():
         # sample = R(s,a,s') + gamma*max(Q(s',a') of all a' in actions)
 
         sample = (reward + (self.discount*self.computeValueFromQValues(nextState)))
-        self.values[(state,action)] = (1-self.alpha)*self.getQValue(state,action) + (self.alpha*sample)
+        self.qValues[action] = (1-self.alpha)*self.getQValue(action) + (self.alpha*sample)
 
-    def getPolicy(self, state):
-        return self.computeActionFromQValues(state)
-
-    def getValue(self, state):
-        return self.computeValueFromQValues(state)
+    def getPolicy(self):
+        return self.computeActionFromQValues()
+    def getValue(self):
+        return self.computeValueFromQValues()
 
 
     def run(self):
