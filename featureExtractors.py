@@ -2,7 +2,11 @@
 This file is adapted from the Pacman AI project developed at UC Berkeley.
 """
 
-import util
+import util 
+from pytience.cmd.klondike import KlondikeGame
+from pytience.cards import deck
+from pytience.games.solitaire import tableau
+from pytience.games.solitaire import CARD_VALUES
 
 class FeatureExtractor:
     def getFeatures(self, state, action):
@@ -15,39 +19,56 @@ class FeatureExtractor:
 
 class SimpleExtractor(FeatureExtractor):
     """
-    Returns simple features for a basic reflex Pacman:
-    - whether food will be eaten
-    - how far away the next food is
-    - whether a ghost collision is imminent
-    - whether a ghost is one step away
+    Returns features:
+        - number of hidden cards in each pile after the move
+        - greatest number of hidden cards in a pile
+        - If the move reveals a hidden card ***************
+        - If the move ends in a foundation
+        - Origin of the move
     """
 
-    def getFeatures(self, state, action):
-        # extract the grid of food and wall locations and get the ghost locations
-        food = state.getFood()
-        walls = state.getWalls()
-        ghosts = state.getGhostPositions()
-
+    def getFeatures(self, game:KlondikeGame, action):
         features = util.Counter()
-
+        tableaus = game.tableau.piles
         features["bias"] = 1.0
 
-        # compute the location of pacman after he takes the action
-        x, y = state.getPacmanPosition()
-        dx, dy = Actions.directionToVector(action)
-        next_x, next_y = int(x + dx), int(y + dy)
+        parse = action.split()
 
-        # count the number of ghosts 1-step away
-        features["#-of-ghosts-1-step-away"] = sum((next_x, next_y) in Actions.getLegalNeighbors(g, walls) for g in ghosts)
+        hiddenCardsPre = 0.0
+        for tableau in tableaus:
+            for card in tableau:
+                if not card.is_revealed:
+                    hiddenCardsPre += 1.0
 
-        # if there is no danger of ghosts then add the food feature
-        if not features["#-of-ghosts-1-step-away"] and food[next_x][next_y]:
-            features["eats-food"] = 1.0
+        util.doAction(game, action)
 
-        dist = closestFood((next_x, next_y), food, walls)
-        if dist is not None:
-            # make the distance a number less than one otherwise the update
-            # will diverge wildly
-            features["closest-food"] = float(dist) / (walls.width * walls.height)
+        hiddenCards = 0.0
+        maxHiddenCards = 0.0
+        for tableau in tableaus:
+            pileHiddenCards = 0.0
+            for card in tableau:
+                if not card.is_revealed:
+                    hiddenCards += 1.0
+                    pileHiddenCards += 1.0
+            if maxHiddenCards < pileHiddenCards:
+                maxHiddenCards = pileHiddenCards
+
+        features["total hidden cards"] = hiddenCards
+        features["max hidden cards"] = maxHiddenCards
+        features["reveal hidden cards"] = hiddenCards < hiddenCardsPre
+
+        if (action[0] == "D"):
+            game.undo_deal()
+        elif (action[0] == "F"):
+            features["origin"] = int(parse[1])
+            features["foundation"] += 1.0
+            game.undo_select_foundation()
+        elif (action[0] == "W"):
+            game.undo_select_waste()
+        elif (action[0] == "T"):
+            features["origin"] = parse[1]
+            game.undo_select_tableau()
+
+
         features.divideAll(10.0)
         return features
