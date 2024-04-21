@@ -21,7 +21,7 @@ import featureExtractors
 
 
 class QLearningAgent():
-    def __init__(self, actionFn = None, numTraining=100, epsilon=0.5, alpha=0.5, gamma=1):
+    def __init__(self, numTraining=100, epsilon=0.5, alpha=0.5, gamma=1):
         """
         actionFn: Function which takes a state and returns the list of legal actions
 
@@ -30,9 +30,7 @@ class QLearningAgent():
         gamma    - discount factor
         numTraining - number of training episodes, i.e. no learning after these many episodes
         """
-        if actionFn == None:
-            actionFn = lambda state: state.getLegalActions()
-        self.actionFn = actionFn # Action fn gives the set of legal moves at the current state
+        
         self.episodesSoFar = 0
         self.accumTrainRewards = 0.0
         self.accumTestRewards = 0.0
@@ -61,7 +59,7 @@ class QLearningAgent():
                     # If the colors alternate, and the source card is one more than the last card
                     if sourceCard.suit.color != destCard.suit.color \
                     and CARD_VALUES[sourceCard.pip] == CARD_VALUES[destCard.pip] + 1:
-                        #TODO: construct action
+                        # TODO: construct action
                         actions.append(placeholderAction)
         
 
@@ -75,7 +73,7 @@ class QLearningAgent():
 
         return actions
 
-    #TODO add legal actions for stock and waste.
+    # TODO add legal actions for stock and waste.
     def getLegalActions(self):
         """
           Get the actions available for a given
@@ -99,20 +97,7 @@ class QLearningAgent():
         return legalActions
 
 
-    def interpretAction(self, action):
-
-        parse = action.split()
-
-        if (action[0] == "D"):
-            self.game.deal()
-        elif (action[0] == "F"):
-            self.game.select_foundation(self.game, int(parse[1]), int(parse[2]))
-        elif (action[0] == "W"):
-            self.game.select_waste(self.game, parse[1])
-        elif (action[0] == "T"):
-            self.game.select_tableau(self.game, int(parse[1]), int(parse[2]), int(parse[3]))
-        elif (action[0] == "S"):
-            self.game.solve(self.game)
+    
 
 
     #TODO verify
@@ -266,15 +251,7 @@ class QLearningAgent():
     def isInTesting(self):
         return not self.isInTraining()
     
-    def setEpsilon(self, epsilon):
-        self.epsilon = epsilon
-
-    def setLearningRate(self, alpha):
-        self.alpha = alpha
-
-    def setDiscount(self, discount):
-        self.discount = discount
-
+    
     def doAction(self,state,action):
         """
             Called by inherited class when
