@@ -30,6 +30,22 @@ class KlondikeController(KlondikeCmd):
         legalActions = []
         if (self.klondike.stock.remaining > 0) or (len(self.klondike.waste) > 0) :
             legalActions.append(["D"])
+        if (len(self.klondike.waste) > 0) :
+            for suit in self.klondike.foundation.piles.keys() :
+                pile = self.klondike.foundation.piles[suit]
+                if len(pile) > 0 :
+                    #Check if card in pile is one less than one in waste
+                else :
+                    #Check if card in waste is ace of correct suit
+            #Cycle through Tableau piles
+                # Check all moves from waste to tableau (Cycle through each deck, suit must be opposite and
+                # number must be one less than card in deck)
+        # Check Tableau to Tableau combos (Can move more than one card)
+        # Kings start new tableau decks
+            #Check Tableau to Foundation combos
+            #Check Foundation to Tableau moves
+        # Check if solve is available.
+
         return legalActions
 
     def performAction(self, action):
