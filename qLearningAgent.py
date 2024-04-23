@@ -17,11 +17,11 @@ from pytience.games.solitaire import tableau
 from pytience.games.solitaire import CARD_VALUES
 
 import util
-import featureExtractors
+from featureExtractors import SimpleExtractor
 
 
 class QLearningAgent():
-    def __init__(self, numTraining=100, epsilon=0.5, alpha=0.5, gamma=1):
+    def __init__(self, featExtractor=SimpleExtractor(), numTraining=100, epsilon=0.5, epsilonDecay=0.995, epsilonMin=0.01, alpha=0.5, gamma=1):
         """
         actionFn: Function which takes a state and returns the list of legal actions
 
@@ -30,19 +30,20 @@ class QLearningAgent():
         gamma    - discount factor
         numTraining - number of training episodes, i.e. no learning after these many episodes
         """
-        
+
+        # Training related variables 
         self.episodesSoFar = 0
         self.accumTrainRewards = 0.0
         self.accumTestRewards = 0.0
         self.numTraining = int(numTraining)
+       
+        # Hyperparamters
         self.epsilon = float(epsilon)
         self.alpha = float(alpha)
         self.discount = float(gamma)
-
-        self.qValues = util.Counter()
-
-        self.cmd = KlondikeCmd()
-        # States are tracked by GameState objects GameState (from either {pacman, capture, sonar}.py) ALT: get set of legal moves from pytience
+        self.epsilonDecay = float(epsilonDecay)
+        self.epsilonMin = float(epsilonMin)
+        self.featExtractor = featExtractor
 
     # Check whether the agent has lost the game
     def hasLost() -> bool:
@@ -101,15 +102,17 @@ class QLearningAgent():
         return legalActions
 
 
-    
-
 
     #TODO verify
-    def getQValue(self, action):
+    def getQValue(self, state, action):
         """
         Should return Q(state,action)
         """
-        return self.qValues[action] # self.qValues should contain Q-values
+        q = 0
+        features = self.featExtractor.getFeatures(state, action)
+        for feature in features:
+            q += features[feature] * self.weights[feature]
+        return q
 
     #TODO verify
     def computeValueFromQValues(self):
@@ -188,7 +191,7 @@ class QLearningAgent():
             
         return action
     #TODO verify
-    def update(self, action, nextState, reward: float):
+    def update(self, state, action, nextState, reward: float):
         """
           The parent class calls this to observe a
           state = action => nextState and reward transition.
@@ -201,8 +204,11 @@ class QLearningAgent():
         # Q(s,a)updated = (1-alpha)Q(s,a) + alpha(sample)
         # sample = R(s,a,s') + gamma*max(Q(s',a') of all a' in actions)
 
-        sample = (reward + (self.discount*self.computeValueFromQValues(nextState)))
-        self.qValues[action] = (1-self.alpha)*self.getQValue(action) + (self.alpha*sample)
+        features = self.featExtractor.getFeatures(state,action)
+        diff = (reward + (self.discount*self.computeValueFromQValues(nextState))) - self.getQValue(state,action)
+        for feature in features:
+            # Question for TAs: I had to move the diff calc outside of the loop. Why doesn't it work inside the loop?
+            self.weights[feature] = self.weights[feature] + (self.alpha*diff*features[feature])
 
     def getPolicy(self):
         return self.computeActionFromQValues()
