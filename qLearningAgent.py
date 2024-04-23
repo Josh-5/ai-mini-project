@@ -98,7 +98,7 @@ class QLearningAgent():
           terminal state, you should return a value of 0.0.
         """
         "*** YOUR CODE HERE ***"
-        legalActions = self.getLegalActions()
+        legalActions = gameUI.getLegalActions()
 
         # If there are no legal actions (terminal state), return 0.0
         if (len(legalActions) == 0):
@@ -113,14 +113,14 @@ class QLearningAgent():
         return maxQ
 
     #TODO verify
-    def computeActionFromQValues(self):
+    def computeActionFromQValues(self, gameUI: KlondikeController):
         """
           Compute the best action to take in a state.  Note that if there
           are no legal actions, which is the case at the terminal state,
           you should return None.
         """
         "*** YOUR CODE HERE ***"
-        legalActions = self.getLegalActions()
+        legalActions = gameUI.getLegalActions()
         print(legalActions)
         bestAction = None
 
@@ -166,7 +166,7 @@ class QLearningAgent():
             
         return action
     #TODO verify
-    def update(self, state, action, nextState, reward: float):
+    def update(self, prevGameUI: KlondikeController, action, gameUI: KlondikeController, reward: float):
         """
           The parent class calls this to observe a
           state = action => nextState and reward transition.
@@ -179,8 +179,8 @@ class QLearningAgent():
         # Q(s,a)updated = (1-alpha)Q(s,a) + alpha(sample)
         # sample = R(s,a,s') + gamma*max(Q(s',a') of all a' in actions)
 
-        features = self.featExtractor.getFeatures(state,action)
-        diff = (reward + (self.discount*self.computeValueFromQValues(nextState))) - self.getQValue(state,action)
+        features = self.featExtractor.getFeatures(prevGameUI,action)
+        diff = (reward + (self.discount*self.computeValueFromQValues(gameUI))) - self.getQValue(state,action)
         for feature in features:
             # Question for TAs: I had to move the diff calc outside of the loop. Why doesn't it work inside the loop?
             self.weights[feature] = self.weights[feature] + (self.alpha*diff*features[feature])
