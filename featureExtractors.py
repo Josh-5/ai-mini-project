@@ -24,9 +24,10 @@ class SimpleExtractor(FeatureExtractor):
         - Origin of the move
     """
 
-    def getFeatures(self, state: KlondikeController, action):
+    def getFeatures(self, gameUI: KlondikeController, action):
+
         features = util.Counter()
-        tableaus = state.tableau.piles
+        tableaus = gameUI.game.tableau.piles
         features["bias"] = 1.0
 
         parse = action.split()
@@ -37,7 +38,7 @@ class SimpleExtractor(FeatureExtractor):
                 if not card.is_revealed:
                     hiddenCardsPre += 1.0
 
-        util.doAction(state, action)
+        util.doAction(, action)
 
         hiddenCards = 0.0
         maxHiddenCards = 0.0

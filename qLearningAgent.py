@@ -30,22 +30,22 @@ class KlondikeController(KlondikeCmd):
         util.raiseNotDefined()
 
     def performAction(self, action):
-        parse = action.split()
+        parsedAction = action.split()
 
-        if (action[0] == "D"):
+        if (parsedAction[0] == "D"):
             # The game replenishes when there are still waste cards but no cards in deck/stock
             if len(self.game.stock.remaining) == 0 and len(self.game.waste) > 0:
                 self.replenishFlag += 1
             self.game.deal()
 
-        elif (action[0] == "F"):
-            self.game.select_foundation(self.game, int(parse[1]), int(parse[2]))
-        elif (action[0] == "W"):
-            self.game.select_waste(self.game, parse[1])
+        elif (parsedAction[0] == "F"):
+            self.game.select_foundation(self.game, int(parsedAction[1]), int(parsedAction[2]))
+        elif (parsedAction[0] == "W"):
+            self.game.select_waste(self.game, parsedAction[1])
             self.replenishFlag = 0
-        elif (action[0] == "T"):
-            self.game.select_tableau(self.game, int(parse[1]), int(parse[2]), int(parse[3]))
-        elif (action[0] == "S"):
+        elif (parsedAction[0] == "T"):
+            self.game.select_tableau(self.game, int(parsedAction[1]), int(parsedAction[2]), int(parsedAction[3]))
+        elif (parsedAction[0] == "S"):
             self.game.solve(self.game)
 
     def hasLost(self):
@@ -79,18 +79,18 @@ class QLearningAgent():
         self.epsilonMin = float(epsilonMin)
         self.featExtractor = featExtractor
   
-    def getQValue(self, state: KlondikeControllerte, action):
+    def getQValue(self, gameUI: KlondikeController, action):
         """
         Should return Q(state,action)
         """
         q = 0
-        features = self.featExtractor.getFeatures(state, action)
+        features = self.featExtractor.getFeatures(gameUI, action)
         for feature in features:
             q += features[feature] * self.weights[feature]
         return q
 
     #TODO verify
-    def computeValueFromQValues(self, state: KlondikeController):
+    def computeValueFromQValues(self, gameUI: KlondikeController):
         """
           Returns max_action Q(state,action)
           where the max is over legal actions.  Note that if
@@ -139,7 +139,7 @@ class QLearningAgent():
         return bestAction
             
     # TODO verify
-    def getAction(self, state):
+    def getAction(self, gameUI:KlondikeController):
         """
           Compute the action to take in the current state.  With
           probability self.epsilon, we should take a random action and
@@ -150,7 +150,7 @@ class QLearningAgent():
           HINT: To pick randomly from a list, use random.choice(list)
         """
         # Pick Action
-        legalActions = self.getLegalActions()
+        legalActions = gameUI.getLegalActions()
         action = None
         "*** YOUR CODE HERE ***"
         # If there are no legal actions, return None
@@ -189,11 +189,6 @@ class QLearningAgent():
         return self.computeActionFromQValues()
     def getValue(self):
         return self.computeValueFromQValues()
-
-
-    def run(self):
-        while (not self.game.is_solved() and not self.getLegalActions() == []):
-            self.interpretAction(self.computeActionFromQValues())
 
 
     # Training
