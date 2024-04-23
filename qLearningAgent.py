@@ -20,6 +20,16 @@ import util
 from featureExtractors import SimpleExtractor
 
 
+class KlondikeController(KlondikeCmd):
+    def __init__(self: KlondikeCmd):
+        super.__init__()
+        self.game = self.klondike
+    
+    def getLegalActions(self):
+        pass
+
+    
+
 class QLearningAgent():
     def __init__(self, featExtractor=SimpleExtractor(), numTraining=100, epsilon=0.5, epsilonDecay=0.995, epsilonMin=0.01, alpha=0.5, gamma=1):
         """
