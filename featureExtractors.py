@@ -38,7 +38,7 @@ class SimpleExtractor(FeatureExtractor):
                 if not card.is_revealed:
                     hiddenCardsPre += 1.0
 
-        util.doAction(, action)
+        # util.doAction(, action)
 
         hiddenCards = 0.0
         maxHiddenCards = 0.0
