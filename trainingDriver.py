@@ -20,16 +20,15 @@ class TrainingDriver:
         for episode in range(self.episodesCount):
             self.agent.startEpisode()
             while not self.game.is_solved() and not self.agent.hasLost():
-                prevState = copy.deepcopy(self.control)
                 prevScore = self.control.game.score
-                action = self.agent.getAction(prevState)
+                action = self.agent.getAction(self.control)
 
                 # execute action
                 self.control.performAction(action)
                 deltaReward = self.control.game.score - prevScore
 
                 # observe the transition and learn
-                self.agent.observeTransition(prevState, action, self.control, deltaReward)
+                self.agent.observeTransition(self.control, deltaReward)
 
             self.agent.stopEpisode()
 

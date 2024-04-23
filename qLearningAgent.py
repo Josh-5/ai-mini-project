@@ -19,14 +19,7 @@ from pytience.games.solitaire import CARD_VALUES
 import util
 
 
-class FeatureExtractor:
-    def getFeatures(self, state, action):
-        """
-          Returns a dict from features to counts
-          Usually, the count will just be 1.0 for
-          indicator functions.
-        """
-        util.raiseNotDefined()
+
 
 class KlondikeController(KlondikeCmd):
     def __init__(self):
@@ -63,6 +56,14 @@ class KlondikeController(KlondikeCmd):
             return True
 
     
+class FeatureExtractor:
+    def getFeatures(self, state, action):
+        """
+          Returns a dict from features to counts
+          Usually, the count will just be 1.0 for
+          indicator functions.
+        """
+        util.raiseNotDefined()
 
 class SimpleExtractor(FeatureExtractor):
     """
@@ -74,13 +75,12 @@ class SimpleExtractor(FeatureExtractor):
         - Origin of the move
     """
 
-    def getFeatures(self, gameUI: KlondikeController, action):
+    def getFeatures(self, gameUI: KlondikeController):
 
         features = util.Counter()
         tableaus = gameUI.game.tableau.piles
         features["bias"] = 1.0
 
-        parse = action.split()
 
         hiddenCardsPre = 0.0
         for tableau in tableaus:
@@ -105,17 +105,17 @@ class SimpleExtractor(FeatureExtractor):
         features["max hidden cards"] = maxHiddenCards
         features["reveal hidden cards"] = hiddenCards < hiddenCardsPre
 
-        if (action[0] == "D"):
-            state.undo_deal()
-        elif (action[0] == "F"):
-            features["origin"] = int(parse[1])
-            features["foundation"] += 1.0
-            state.undo_select_foundation()
-        elif (action[0] == "W"):
-            state.undo_select_waste()
-        elif (action[0] == "T"):
-            features["origin"] = parse[1]
-            state.undo_select_tableau()
+        # if (action[0] == "D"):
+        #     state.undo_deal()
+        # elif (action[0] == "F"):
+        #     features["origin"] = int(parse[1])
+        #     features["foundation"] += 1.0
+        #     state.undo_select_foundation()
+        # elif (action[0] == "W"):
+        #     state.undo_select_waste()
+        # elif (action[0] == "T"):
+        #     features["origin"] = parse[1]
+        #     state.undo_select_tableau()
 
 
         features.divideAll(10.0)

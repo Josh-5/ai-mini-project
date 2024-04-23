@@ -30,7 +30,6 @@ class SimpleExtractor(FeatureExtractor):
         tableaus = gameUI.game.tableau.piles
         features["bias"] = 1.0
 
-        parse = action.split()
 
         hiddenCardsPre = 0.0
         for tableau in tableaus:
