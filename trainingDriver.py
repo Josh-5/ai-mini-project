@@ -3,6 +3,7 @@ The main driver for training our approximate q learning agent. Later on there sh
 features that help storing and loading the parameters.
 """
 
+import copy
 from pytience.cmd.klondike import KlondikeCmd
 from qLearningAgent import QLearningAgent
 from qLearningAgent import KlondikeController
@@ -10,10 +11,8 @@ from util import doAction, raiseNotDefined
 
 class TrainingDriver:
     def __init__(self, episodesCount=5000, testCount=1000):
-        self.cmd = KlondikeCmd()
-        self.game = self.cmd.klondike
         self.agent = QLearningAgent(numTraining=episodesCount)
-        self.control = KlondikeController(self.cmd)
+        self.control = KlondikeController()
         self.episodesCount = episodesCount
         self.testCount = testCount
 
@@ -21,16 +20,16 @@ class TrainingDriver:
         for episode in range(self.episodesCount):
             self.agent.startEpisode()
             while not self.game.is_solved() and not self.agent.hasLost():
-                prevState = self.game
+                prevState = copy.deepcopy(self.control)
                 prevScore = self.control.game.score
-                action = self.agent.getAction()
+                action = self.agent.getAction(prevState)
 
                 # execute action
                 self.control.performAction(action)
                 deltaReward = self.control.game.score - prevScore
 
                 # observe the transition and learn
-                self.agent.observeTransition(prevState, action, self.game, deltaReward)
+                self.agent.observeTransition(prevState, action, self.control, deltaReward)
 
             self.agent.stopEpisode()
 
