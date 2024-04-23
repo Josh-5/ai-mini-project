@@ -11,7 +11,7 @@
 
 import random
 import time
-from pytience.cmd.klondike import KlondikeCmd
+from pytience.cmd.klondike import KlondikeCmd, KlondikeGame
 from pytience.cards import deck
 from pytience.games.solitaire import tableau
 from pytience.games.solitaire import CARD_VALUES
@@ -34,8 +34,10 @@ class KlondikeController(KlondikeCmd):
             for suit in self.klondike.foundation.piles.keys() :
                 pile = self.klondike.foundation.piles[suit]
                 if len(pile) > 0 :
+                    pass
                     #Check if card in pile is one less than one in waste
                 else :
+                    pass
                     #Check if card in waste is ace of correct suit
             #Cycle through Tableau piles
                 # Check all moves from waste to tableau (Cycle through each deck, suit must be opposite and
@@ -48,7 +50,10 @@ class KlondikeController(KlondikeCmd):
 
         return legalActions
 
-    def performAction(self, action):
+    def performAction(self, action, game=None):
+        # this is for FeatureExtractor
+        if game is not None:
+            self.klondike = game
         parsedAction = action.split()
 
         if (parsedAction[0] == "D"):
@@ -91,10 +96,12 @@ class SimpleExtractor(FeatureExtractor):
         - Origin of the move
     """
 
-    def getFeatures(self, gameUI: KlondikeController):
-
+    def getFeatures(self, state, action):
+        gameUI = KlondikeController()
+        game = KlondikeGame(game_dump=state)
+        gameUI.performAction(game, action)
         features = util.Counter()
-        tableaus = gameUI.game.tableau.piles
+        tableaus = game.tableau.piles
         features["bias"] = 1.0
 
 
@@ -121,17 +128,7 @@ class SimpleExtractor(FeatureExtractor):
         features["max hidden cards"] = maxHiddenCards
         features["reveal hidden cards"] = hiddenCards < hiddenCardsPre
 
-        # if (action[0] == "D"):
-        #     state.undo_deal()
-        # elif (action[0] == "F"):
-        #     features["origin"] = int(parse[1])
-        #     features["foundation"] += 1.0
-        #     state.undo_select_foundation()
-        # elif (action[0] == "W"):
-        #     state.undo_select_waste()
-        # elif (action[0] == "T"):
-        #     features["origin"] = parse[1]
-        #     state.undo_select_tableau()
+        
 
 
         features.divideAll(10.0)
@@ -166,18 +163,18 @@ class QLearningAgent():
         self.weights = util.Counter()
         self.legalActions = legalActions
   
-    def getQValue(self, state):
+    def getQValue(self, state, action):
         """
         Should return Q(state,action)
         """
         q = 0
-        features = self.featExtractor.getFeatures(state)
+        features = self.featExtractor.getFeatures(state, action)
         for feature in features:
             q += features[feature] * self.weights[feature]
         return q
 
 
-    def computeValueFromQValues(self):
+    def computeValueFromQValues(self, state):
         """
           Returns max_action Q(state,action)
           where the max is over legal actions.  Note that if
@@ -194,13 +191,13 @@ class QLearningAgent():
         # Loop through all legal actions, find and return the greatest Q value
         maxQ = -999999
         for action in legalActions:
-            q = self.getQValue(action)
+            q = self.getQValue(state, action)
             if (q > maxQ):
                 maxQ = q
         return maxQ
 
     #TODO verify
-    def computeActionFromQValues(self):
+    def computeActionFromQValues(self, state):
         """
           Compute the best action to take in a state.  Note that if there
           are no legal actions, which is the case at the terminal state,
@@ -218,13 +215,13 @@ class QLearningAgent():
         # Loop through all legal actions, find and return the action with the greatest Q value
         bestQ = -999999
         for action in legalActions:
-            q = self.getQValue(action)
+            q = self.getQValue(state, action)
             if (q > bestQ):
                 bestAction = action
                 bestQ = q
         return bestAction
         
-    def getAction(self):
+    def getAction(self, state):
         """
           Compute the action to take in the current state.  With
           probability self.epsilon, we should take a random action and
@@ -243,7 +240,7 @@ class QLearningAgent():
             return None
         
         # Pick the best move
-        action = self.computeActionFromQValues()
+        action = self.computeActionFromQValues(state)
 
         # Epsilon chance of picking a random move
         if (util.flipCoin(self.epsilon)):
@@ -251,7 +248,7 @@ class QLearningAgent():
             
         return action
     #TODO verify
-    def update(self, state, nextState, reward: float):
+    def update(self, state, action, nextState, reward: float):
         """
           The parent class calls this to observe a
           state = action => nextState and reward transition.
@@ -260,8 +257,8 @@ class QLearningAgent():
           it will be called on your behalf
         """
         "*** YOUR CODE HERE ***"
-        features = self.featExtractor.getFeatures(nextState)
-        diff = (reward + (self.discount*self.computeValueFromQValues(nextState))) - self.getQValue(state)
+        features = self.featExtractor.getFeatures(state, action)
+        diff = (reward + (self.discount*self.computeValueFromQValues(nextState))) - self.getQValue(state, action)
         for feature in features:
             # Question for TAs: I had to move the diff calc outside of the loop. Why doesn't it work inside the loop?
             self.weights[feature] = self.weights[feature] + (self.alpha*diff*features[feature])
@@ -273,7 +270,7 @@ class QLearningAgent():
 
 
     # Training
-    def observeTransition(self, state, nextState, deltaReward, legalActions):
+    def observeTransition(self, state, action, nextState, deltaReward, legalActions):
         """
             Called by environment to inform agent that a transition has
             been observed. This will result in a call to self.update
@@ -283,7 +280,7 @@ class QLearningAgent():
         """
         self.legalActions = legalActions
         self.episodeRewards += deltaReward
-        self.update(state, nextState, deltaReward)
+        self.update(state, action, nextState, deltaReward)
 
     def startEpisode(self):
         """

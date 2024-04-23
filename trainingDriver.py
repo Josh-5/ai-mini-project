@@ -35,7 +35,7 @@ class TrainingDriver:
 
                 # observe the transition and learn
                 self.agent.observeTransition(
-                    prevState, self.control.klondike.dump(), deltaReward, self.control.getLegalActions())
+                    prevState, action, self.control.klondike.dump(), deltaReward, self.control.getLegalActions())
                 
                 # check end game
                 if self.control.hasLost():
