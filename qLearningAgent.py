@@ -146,13 +146,15 @@ class QLearningAgent():
         self.epsilonDecay = float(epsilonDecay)
         self.epsilonMin = float(epsilonMin)
         self.featExtractor = featExtractor
+
+        self.weights = util.Counter()
   
-    def getQValue(self, gameUI: KlondikeController, action):
+    def getQValue(self, gameUI: KlondikeController):
         """
         Should return Q(state,action)
         """
         q = 0
-        features = self.featExtractor.getFeatures(gameUI, action)
+        features = self.featExtractor.getFeatures(gameUI)
         for feature in features:
             q += features[feature] * self.weights[feature]
         return q
@@ -189,7 +191,6 @@ class QLearningAgent():
         """
         "*** YOUR CODE HERE ***"
         legalActions = gameUI.getLegalActions()
-        print(legalActions)
         bestAction = None
 
         # If there are no legal actions (terminal state), return 0.0
@@ -234,7 +235,7 @@ class QLearningAgent():
             
         return action
     #TODO verify
-    def update(self, prevGameUI: KlondikeController, action, gameUI: KlondikeController, reward: float):
+    def update(self, gameUI: KlondikeController, reward: float):
         """
           The parent class calls this to observe a
           state = action => nextState and reward transition.
@@ -247,8 +248,8 @@ class QLearningAgent():
         # Q(s,a)updated = (1-alpha)Q(s,a) + alpha(sample)
         # sample = R(s,a,s') + gamma*max(Q(s',a') of all a' in actions)
 
-        features = self.featExtractor.getFeatures(prevGameUI,action)
-        diff = (reward + (self.discount*self.computeValueFromQValues(gameUI))) - self.getQValue(state,action)
+        features = self.featExtractor.getFeatures(gameUI)
+        diff = (reward + (self.discount*self.computeValueFromQValues(gameUI))) - self.getQValue(gameUI)
         for feature in features:
             # Question for TAs: I had to move the diff calc outside of the loop. Why doesn't it work inside the loop?
             self.weights[feature] = self.weights[feature] + (self.alpha*diff*features[feature])
@@ -260,7 +261,7 @@ class QLearningAgent():
 
 
     # Training
-    def observeTransition(self, state, action, nextState, deltaReward):
+    def observeTransition(self, gameUI, deltaReward):
         """
             Called by environment to inform agent that a transition has
             been observed. This will result in a call to self.update
@@ -269,14 +270,12 @@ class QLearningAgent():
             NOTE: Do *not* override or call this function
         """
         self.episodeRewards += deltaReward
-        self.update(state,action,nextState,deltaReward)
+        self.update(gameUI,deltaReward)
 
     def startEpisode(self):
         """
           Called by environment when new episode is starting
         """
-        self.lastState = None
-        self.lastAction = None
         self.episodeRewards = 0.0
 
     def stopEpisode(self):
@@ -298,58 +297,7 @@ class QLearningAgent():
 
     def isInTesting(self):
         return not self.isInTraining()
-    
-    
-    def doAction(self,state,action):
-        """
-            Called by inherited class when
-            an action is taken in a state
-        """
-        self.lastState = state
-        self.lastAction = action
 
-    def final(self, state):
-        """
-          Called by Pacman game at the terminal state
-        """
-        deltaReward = state.getScore() - self.lastState.getScore()
-        self.observeTransition(self.lastState, self.lastAction, state, deltaReward)
-        self.stopEpisode()
-
-        # Make sure we have this var
-        if not 'episodeStartTime' in self.__dict__:
-            self.episodeStartTime = time.time()
-        if not 'lastWindowAccumRewards' in self.__dict__:
-            self.lastWindowAccumRewards = 0.0
-        self.lastWindowAccumRewards += state.getScore()
-
-        NUM_EPS_UPDATE = 100
-        if self.episodesSoFar % NUM_EPS_UPDATE == 0:
-            print('Reinforcement Learning Status:')
-            windowAvg = self.lastWindowAccumRewards / float(NUM_EPS_UPDATE)
-            if self.episodesSoFar <= self.numTraining:
-                trainAvg = self.accumTrainRewards / float(self.episodesSoFar)
-                print('\tCompleted %d out of %d training episodes' % (
-                       self.episodesSoFar,self.numTraining))
-                print('\tAverage Rewards over all training: %.2f' % (
-                        trainAvg))
-            else:
-                testAvg = float(self.accumTestRewards) / (self.episodesSoFar - self.numTraining)
-                print('\tCompleted %d test episodes' % (self.episodesSoFar - self.numTraining))
-                print('\tAverage Rewards over testing: %.2f' % testAvg)
-            print('\tAverage Rewards for last %d episodes: %.2f'  % (
-                    NUM_EPS_UPDATE,windowAvg))
-            print('\tEpisode took %.2f seconds' % (time.time() - self.episodeStartTime))
-            self.lastWindowAccumRewards = 0.0
-            self.episodeStartTime = time.time()
-
-        if self.episodesSoFar == self.numTraining:
-            msg = 'Training Done (turning off epsilon and alpha)'
-            print('%s\n%s' % (msg,'-' * len(msg)))
-
-    # Pacman specifically hasmore functions to track the current state/observation, initial state, and final state.
-
-    
 
 def main():
     game = KlondikeController()
