@@ -23,10 +23,34 @@ from featureExtractors import SimpleExtractor
 class KlondikeController(KlondikeCmd):
     def __init__(self: KlondikeCmd):
         super.__init__()
-        self.game = self.klondike
+        self.game = self.klondike  # Alias for klondike
+        self.replenishFlag = 0  # Indicates how many times we have replenished the deck/stock
     
     def getLegalActions(self):
-        pass
+        util.raiseNotDefined()
+
+    def performAction(self, action):
+        parse = action.split()
+
+        if (action[0] == "D"):
+            # The game replenishes when there are still waste cards but no cards in deck/stock
+            if len(self.game.stock.remaining) == 0 and len(self.game.waste) > 0:
+                self.replenishFlag += 1
+            self.game.deal()
+
+        elif (action[0] == "F"):
+            self.game.select_foundation(self.game, int(parse[1]), int(parse[2]))
+        elif (action[0] == "W"):
+            self.game.select_waste(self.game, parse[1])
+            self.replenishFlag = 0
+        elif (action[0] == "T"):
+            self.game.select_tableau(self.game, int(parse[1]), int(parse[2]), int(parse[3]))
+        elif (action[0] == "S"):
+            self.game.solve(self.game)
+
+    def hasLost(self):
+        if (self.replenishFlag == 2):
+            return True
 
     
 
@@ -54,67 +78,8 @@ class QLearningAgent():
         self.epsilonDecay = float(epsilonDecay)
         self.epsilonMin = float(epsilonMin)
         self.featExtractor = featExtractor
-
-    # Check whether the agent has lost the game
-    def hasLost() -> bool:
-        # TODO implement
-        util.raiseNotDefined()
-
-    def getDestinationActions(self, sourceTableau, cardIndex):
-        actions = []
-        placeholderAction = ""
-
-        if not isinstance(sourceTableau,deck.Suit):
-            sourceCard:deck.Card = sourceTableau[cardIndex]
-            # Check the tableau piles. destTableau is type tableau.Tableau
-            for destTableau in self.game.tableau.piles:
-                # make sure the source and destination pile aren't the same
-                if sourceTableau != destTableau: 
-                    destCard:deck.Card = destTableau[len(destTableau) - 1]
-                    # If the colors alternate, and the source card is one more than the last card
-                    if sourceCard.suit.color != destCard.suit.color \
-                    and CARD_VALUES[sourceCard.pip] == CARD_VALUES[destCard.pip] + 1:
-                        # TODO: construct action
-                        actions.append(placeholderAction)
-        
-
-            # Check the foundation pile
-            destFoundation = self.game.foundation.piles[sourceCard.suit]
-            if sourceCard.pip == deck.Pip.Ace:
-                actions.append(placeholderAction)
-            elif len(destFoundation) != 0 \
-            and CARD_VALUES[sourceCard.pip] == CARD_VALUES[destFoundation[ len(destFoundation) - 1 ].pip]:
-                actions.append(placeholderAction)
-
-        return actions
-
-    # TODO add legal actions for stock and waste.
-    def getLegalActions(self):
-        """
-          Get the actions available for a given
-          state. This is what you should use to
-          obtain legal actions for a state
-        """
-        # legalActions = self.getDestinationActions(self.game.stock.cards len(state["stock"]["cards"]) - 1)
-
-        # legalActions.append(self.getDestinationActions(state["waste"]["cards"], len(state["waste"]["cards"]) - 1))
-
-        legalActions = []
-        for sourcePile in self.game.tableau.piles:
-            for i in range(len(sourcePile)):
-                # Check if the card is hidden
-                if not sourcePile[i].is_revealed:
-                    legalActions.append(self.getDestinationActions(sourcePile, i))
-        
-        for sourcePile in self.game.foundation.piles:
-            legalActions.append(self.getDestinationActions(sourcePile, i))
-
-        return legalActions
-
-
-
-    #TODO verify
-    def getQValue(self, state, action):
+  
+    def getQValue(self, state: KlondikeControllerte, action):
         """
         Should return Q(state,action)
         """
@@ -125,7 +90,7 @@ class QLearningAgent():
         return q
 
     #TODO verify
-    def computeValueFromQValues(self):
+    def computeValueFromQValues(self, state: KlondikeController):
         """
           Returns max_action Q(state,action)
           where the max is over legal actions.  Note that if

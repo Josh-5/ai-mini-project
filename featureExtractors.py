@@ -3,10 +3,7 @@ This file is adapted from the Pacman AI project developed at UC Berkeley.
 """
 
 import util 
-from pytience.cmd.klondike import KlondikeGame
-from pytience.cards import deck
-from pytience.games.solitaire import tableau
-from pytience.games.solitaire import CARD_VALUES
+from qLearningAgent import KlondikeController
 
 class FeatureExtractor:
     def getFeatures(self, state, action):
@@ -27,9 +24,9 @@ class SimpleExtractor(FeatureExtractor):
         - Origin of the move
     """
 
-    def getFeatures(self, game:KlondikeGame, action):
+    def getFeatures(self, state: KlondikeController, action):
         features = util.Counter()
-        tableaus = game.tableau.piles
+        tableaus = state.tableau.piles
         features["bias"] = 1.0
 
         parse = action.split()
@@ -40,7 +37,7 @@ class SimpleExtractor(FeatureExtractor):
                 if not card.is_revealed:
                     hiddenCardsPre += 1.0
 
-        util.doAction(game, action)
+        util.doAction(state, action)
 
         hiddenCards = 0.0
         maxHiddenCards = 0.0
@@ -58,16 +55,16 @@ class SimpleExtractor(FeatureExtractor):
         features["reveal hidden cards"] = hiddenCards < hiddenCardsPre
 
         if (action[0] == "D"):
-            game.undo_deal()
+            state.undo_deal()
         elif (action[0] == "F"):
             features["origin"] = int(parse[1])
             features["foundation"] += 1.0
-            game.undo_select_foundation()
+            state.undo_select_foundation()
         elif (action[0] == "W"):
-            game.undo_select_waste()
+            state.undo_select_waste()
         elif (action[0] == "T"):
             features["origin"] = parse[1]
-            game.undo_select_tableau()
+            state.undo_select_tableau()
 
 
         features.divideAll(10.0)

@@ -261,17 +261,3 @@ def raiseNotDefined():
           (method, line, fileName))
     sys.exit(1)
 
-
-def doAction(game: KlondikeGame, action):
-    parse = action.split()
-
-    if (action[0] == "D"):
-        game.deal()
-    elif (action[0] == "F"):
-        game.select_foundation(game, int(parse[1]), int(parse[2]))
-    elif (action[0] == "W"):
-        game.select_waste(game, parse[1])
-    elif (action[0] == "T"):
-        game.select_tableau(game, int(parse[1]), int(parse[2]), int(parse[3]))
-    elif (action[0] == "S"):
-        game.solve(game)
