@@ -26,28 +26,76 @@ class KlondikeController(KlondikeCmd):
         KlondikeCmd.__init__(self)
         self.replenishFlag = 0  # Indicates how many times we have replenished the deck/stock
     
-    def getLegalActions(self):
-        legalActions = []
-        if (self.klondike.stock.remaining > 0) or (len(self.klondike.waste) > 0) :
-            legalActions.append(["D"])
-        if (len(self.klondike.waste) > 0) :
-            for suit in self.klondike.foundation.piles.keys() :
-                pile = self.klondike.foundation.piles[suit]
-                if len(pile) > 0 :
-                    pass
-                    #Check if card in pile is one less than one in waste
-                else :
-                    pass
-                    #Check if card in waste is ace of correct suit
-            #Cycle through Tableau piles
-                # Check all moves from waste to tableau (Cycle through each deck, suit must be opposite and
-                # number must be one less than card in deck)
-        # Check Tableau to Tableau combos (Can move more than one card)
-        # Kings start new tableau decks
-            #Check Tableau to Foundation combos
-            #Check Foundation to Tableau moves
-        # Check if solve is available.
+    """ Helper method to check whether we can move a source card to a destination card"""
+    def canMove(self, src: deck.Card, dest: deck.Card, destIsFoundation=False) -> bool:
+        if destIsFoundation:
+            return CARD_VALUES[dest.pip] == CARD_VALUES[src.pip] - 1
+        else:
+            return (dest.color != src.color) and (CARD_VALUES[dest.pip] == CARD_VALUES[src.pip] - 1)
+    
+    """ Helper method to check whether a card is Ace """
+    def isAce(self, card: deck.Card) -> bool:
+        return CARD_VALUES[card.pip] == 1
+    
+    def getLegalActions(self: KlondikeCmd):
+        legalActions: list[str] = []
 
+        if self.klondike.is_solvable():
+            legalActions.append("S")
+            return legalActions
+        
+        # When there are still remaining cards in the stock or waste pile
+        if self.klondike.stock.remaining > 0 or len(self.klondike.waste) > 0:
+            legalActions.append("D")
+
+        # When waste pile is not empty
+        if len(self.klondike.waste) > 0:
+            topWaste: deck.Card = self.klondike.waste[-1]
+
+            # Tries putting card from waste to foundation
+            foundationPile = self.klondike.foundation.piles[topWaste.suit]
+         
+            if self.isAce(topWaste) or self.canMove(topWaste, foundationPile[-1], True):
+                legalActions.append("W F")
+        
+            # Tries putting card from waste to tableu piles
+            for i, tableauPile in enumerate(self.klondike.tableau.piles):
+                if self.canMove(topWaste, tableauPile[-1], False):
+                    legalActions.append(f"W {i}")
+
+        # Moves cards from foundation piles 
+        for i, foundationPile in enumerate(self.klondike.foundation.piles):
+            # Move to tableau piles if applicable
+            for j, tableauPile in enumerate(self.klondike.tableau.piles):
+                topFoundation: deck.Card = foundationPile[-1]
+                topTableau: deck.Card = tableauPile[-1]
+                if self.canMove(topFoundation, topTableau, False):
+                    legalActions.append(f"F {i} {j}")
+
+        # Moves cards from tableau piles
+        for i, tableauPile in enumerate(self.klondike.tableau.piles):
+            j = len(tableauPile) - 1
+            while j >= 0:
+                tableauCard = tableauPile[j]
+                # Stops completely for the pile once a concealed card is hit
+                if tableauCard.is_concealed():
+                    break
+
+                # Possible moves to foundation piles
+                for foundationPile in self.klondike.foundation.piles:
+                    if self.canMove(tableauCard, foundationPile[-1], True):
+                        legalActions.append(f"T {i} {j} F")
+                
+                j -= 1
+
+                # Possible moves to another tableau pile
+                for k, tableauPile in enumerate(self.klondike.tableau.piles):
+                    # Skips the same pile
+                    if k == i:
+                        continue
+                    if self.canMove(tableauCard, tableauPile[-1], False):
+                        legalActions.append(f"T {i} {j} {k}")
+                    
         return legalActions
 
     def performAction(self, action, game=None):
@@ -65,10 +113,17 @@ class KlondikeController(KlondikeCmd):
         elif (parsedAction[0] == "F"):
             self.klondike.select_foundation(self.klondike, int(parsedAction[1]), int(parsedAction[2]))
         elif (parsedAction[0] == "W"):
-            self.klondike.select_waste(self.klondike, parsedAction[1])
+            if parsedAction[1] == "F":
+                self.klondike.select_waste(self.klondike, None)
+            else:
+                self.klondike.select_waste(self.klondike, parsedAction[1])
             self.replenishFlag = 0
         elif (parsedAction[0] == "T"):
-            self.klondike.select_tableau(self.klondike, int(parsedAction[1]), int(parsedAction[2]), int(parsedAction[3]))
+            if parsedAction[3] == "F":
+                self.klondike.select_tableau(self.klondike, int(parsedAction[1]), int(parsedAction[2]), None)
+            else:
+                self.klondike.select_tableau(self.klondike, int(parsedAction[1]), int(parsedAction[2]), int(parsedAction[3]))
+
         elif (parsedAction[0] == "S"):
             self.klondike.solve(self.klondike)
 
