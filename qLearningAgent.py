@@ -73,7 +73,7 @@ class KlondikeController(KlondikeCmd):
             self.klondike.solve(self.klondike)
 
     def hasLost(self):
-        if (self.replenishFlag == 2):
+        if (self.replenishFlag == 2) or not self.getLegalActions():
             return True
 
     
