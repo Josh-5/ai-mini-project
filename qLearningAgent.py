@@ -32,7 +32,7 @@ class KlondikeController(KlondikeCmd):
         if destIsFoundation:
             return CARD_VALUES[dest.pip] == CARD_VALUES[src.pip] - 1
         else:
-            return (dest.color != src.color) and (CARD_VALUES[dest.pip] == CARD_VALUES[src.pip] - 1)
+            return (dest.color != src.color) and (CARD_VALUES[dest.pip] - 1 == CARD_VALUES[src.pip])
     
     """ Helper method to check whether a card is Ace """
     def isAce(self, card: deck.Card) -> bool:
@@ -113,26 +113,26 @@ class KlondikeController(KlondikeCmd):
 
         if (parsedAction[0] == "D"):
             # The klondike replenishes when there are still waste cards but no cards in deck/stock
-            if len(self.klondike.stock.remaining) == 0 and len(self.klondike.waste) > 0:
+            if self.klondike.stock.remaining == 0 and len(self.klondike.waste) > 0:
                 self.replenishFlag += 1
             self.klondike.deal()
 
         elif (parsedAction[0] == "F"):
-            self.klondike.select_foundation(self.klondike, int(parsedAction[1]), int(parsedAction[2]))
+            self.klondike.select_foundation(int(parsedAction[1]), int(parsedAction[2]))
         elif (parsedAction[0] == "W"):
             if parsedAction[1] == "F":
-                self.klondike.select_waste(self.klondike, None)
+                self.klondike.select_waste(None)
             else:
-                self.klondike.select_waste(self.klondike, parsedAction[1])
+                self.klondike.select_waste(parsedAction[1])
             self.replenishFlag = 0
         elif (parsedAction[0] == "T"):
             if parsedAction[3] == "F":
-                self.klondike.select_tableau(self.klondike, int(parsedAction[1]), int(parsedAction[2]), None)
+                self.klondike.select_tableau(int(parsedAction[1]), int(parsedAction[2]), None)
             else:
-                self.klondike.select_tableau(self.klondike, int(parsedAction[1]), int(parsedAction[2]), int(parsedAction[3]))
+                self.klondike.select_tableau(int(parsedAction[1]), int(parsedAction[2]), int(parsedAction[3]))
 
         elif (parsedAction[0] == "S"):
-            self.klondike.solve(self.klondike)
+            self.klondike.solve()
 
     def hasLost(self):
         if (self.replenishFlag == 2) or not self.getLegalActions():
@@ -267,7 +267,6 @@ class QLearningAgent():
                 maxQ = q
         return maxQ
 
-    #TODO verify
     def computeActionFromQValues(self, state):
         """
           Compute the best action to take in a state.  Note that if there
