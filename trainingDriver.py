@@ -7,7 +7,7 @@ import copy
 from pytience.cmd.klondike import KlondikeCmd
 from qLearningAgent import QLearningAgent
 from qLearningAgent import KlondikeController
-from util import doAction, raiseNotDefined
+# from util import doAction, raiseNotDefined
 
 class TrainingDriver:
     def __init__(self, episodesCount=5000, testCount=1000):
@@ -21,17 +21,18 @@ class TrainingDriver:
         print("Training approximate Q agent to play Klondike...")
         winCount = 0
         for episode in range(self.episodesCount):
-            self.agent.startEpisode()
             # Resets the game
-            self.control.do_new()
+            self.control.do_new("")
+
+            self.agent.startEpisode()
             while True:
                 prevState = self.control.klondike.dump()
-                prevScore = self.control.game.score
-                action = self.agent.getAction()
+                prevScore = self.control.klondike.score
+                action = self.agent.getAction(prevState)
 
                 # execute action
                 self.control.performAction(action)
-                deltaReward = self.control.game.score - prevScore
+                deltaReward = self.control.klondike.score - prevScore
 
                 # observe the transition and learn
                 self.agent.observeTransition(
