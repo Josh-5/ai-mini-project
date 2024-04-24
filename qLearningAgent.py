@@ -25,6 +25,7 @@ class KlondikeController(KlondikeCmd):
     def __init__(self):
         KlondikeCmd.__init__(self)
         self.replenishFlag = 0  # Indicates how many times we have replenished the deck/stock
+        self.stateCounts = {}
     
     """ Helper method to check whether we can move a source card to a destination card"""
     def canMove(self, src: deck.Card, dest: deck.Card, destIsFoundation=False) -> bool:
@@ -130,6 +131,15 @@ class KlondikeController(KlondikeCmd):
     def hasLost(self):
         if (self.replenishFlag == 2) or not self.getLegalActions():
             return True
+        
+        current_state = (self.klondike.stock, self.klondike.waste, self.klondike.foundations, self.klondike.tableaus)
+        if current_state in self.state_counts:
+            if self.state_counts[current_state] >= 5:
+                return True
+            self.state_counts[current_state] += 1
+        else:
+            self.state_counts[current_state] = 1
+        return False
 
     
 class FeatureExtractor:
@@ -154,7 +164,7 @@ class SimpleExtractor(FeatureExtractor):
     def getFeatures(self, state, action):
         gameUI = KlondikeController()
         game = KlondikeGame(game_dump=state)
-        gameUI.performAction(game, action)
+        gameUI.performAction(action, game)
         features = util.Counter()
         tableaus = game.tableau.piles
         features["bias"] = 1.0
