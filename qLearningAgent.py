@@ -56,7 +56,7 @@ class KlondikeController(KlondikeCmd):
             # Tries putting card from waste to foundation
             foundationPile = self.klondike.foundation.piles[topWaste.suit]
          
-            if self.isAce(topWaste) or self.canMove(topWaste, foundationPile[-1], True):
+            if self.isAce(topWaste) or foundationPile != [] and self.canMove(topWaste, foundationPile[-1], True):
                 legalActions.append("W F")
         
             # Tries putting card from waste to tableu piles
@@ -65,13 +65,16 @@ class KlondikeController(KlondikeCmd):
                     legalActions.append(f"W {i}")
 
         # Moves cards from foundation piles 
-        for i, foundationPile in enumerate(self.klondike.foundation.piles):
+        for suit, foundationPile in self.klondike.foundation.piles.items():
+     
+            if foundationPile == []:
+                continue
             # Move to tableau piles if applicable
             for j, tableauPile in enumerate(self.klondike.tableau.piles):
                 topFoundation: deck.Card = foundationPile[-1]
                 topTableau: deck.Card = tableauPile[-1]
                 if self.canMove(topFoundation, topTableau, False):
-                    legalActions.append(f"F {i} {j}")
+                    legalActions.append(f"F {suit} {j}")
 
         # Moves cards from tableau piles
         for i, tableauPile in enumerate(self.klondike.tableau.piles):
@@ -79,15 +82,17 @@ class KlondikeController(KlondikeCmd):
             while j >= 0:
                 tableauCard = tableauPile[j]
                 # Stops completely for the pile once a concealed card is hit
-                if tableauCard.is_concealed():
+                if tableauCard.is_concealed:
                     break
 
                 # Possible moves to foundation piles
-                for foundationPile in self.klondike.foundation.piles:
-                    if self.canMove(tableauCard, foundationPile[-1], True):
-                        legalActions.append(f"T {i} {j} F")
+
+           
+                foundationPile = self.klondike.foundation.piles[tableauCard.suit]
                 
-                j -= 1
+                if self.isAce(tableauCard) or foundationPile != [] and self.canMove(tableauCard, foundationPile[-1], True):
+                    legalActions.append(f"T {i} {j} F")
+                
 
                 # Possible moves to another tableau pile
                 for k, tableauPile in enumerate(self.klondike.tableau.piles):
@@ -96,6 +101,7 @@ class KlondikeController(KlondikeCmd):
                         continue
                     if self.canMove(tableauCard, tableauPile[-1], False):
                         legalActions.append(f"T {i} {j} {k}")
+                j -= 1
                     
         return legalActions
 
@@ -376,7 +382,8 @@ class QLearningAgent():
 
 def main():
     game = KlondikeController()
-    print(f"{game.getLegalActions()}")
+    print(game.klondike.dump())
+    print(f"\n\n\n{game.getLegalActions()}")
 
 if __name__ == "__main__":
     main()
