@@ -134,7 +134,7 @@ class KlondikeController(KlondikeCmd):
         elif (parsedAction[0] == "S"):
             self.klondike.solve()
 
-    def hasLost(self):
+    def hasLost(self: KlondikeCmd):
         if (self.replenishFlag == 2) or not self.getLegalActions():
             return True
         
