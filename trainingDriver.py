@@ -21,15 +21,17 @@ class TrainingDriver:
         print("Training approximate Q agent to play Klondike...")
         winCount = 0
         for episode in range(self.episodesCount):
-            # Resets the game
-            self.control.do_new("")
+            
 
             self.agent.startEpisode()
             while True:
                 prevState = self.control.klondike.dump()
                 prevScore = self.control.klondike.score
                 action = self.agent.getAction(prevState)
-
+                print(prevState)
+                print("\n\n\n")
+                print(action)
+                print("\n\n\n")
                 # execute action
                 self.control.performAction(action)
                 deltaReward = self.control.klondike.score - prevScore
@@ -47,6 +49,8 @@ class TrainingDriver:
                     break
 
             self.agent.stopEpisode()
+            # Resets the game
+            self.control.do_new("")
 
         print(f"Training completed, won {winCount}/{self.episodesCount} games")
 

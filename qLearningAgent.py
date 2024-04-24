@@ -123,7 +123,7 @@ class KlondikeController(KlondikeCmd):
             if parsedAction[1] == "F":
                 self.klondike.select_waste(None)
             else:
-                self.klondike.select_waste(parsedAction[1])
+                self.klondike.select_waste(int(parsedAction[1]))
             self.replenishFlag = 0
         elif (parsedAction[0] == "T"):
             if parsedAction[3] == "F":
@@ -138,13 +138,13 @@ class KlondikeController(KlondikeCmd):
         if (self.replenishFlag == 2) or not self.getLegalActions():
             return True
         
-        current_state = (self.klondike.stock, self.klondike.waste, self.klondike.foundations, self.klondike.tableaus)
-        if current_state in self.state_counts:
-            if self.state_counts[current_state] >= 5:
+        current_state = (self.klondike.stock, self.klondike.waste, self.klondike.foundation, self.klondike.tableau)
+        if current_state in self.stateCounts.keys():
+            if self.stateCounts[current_state] >= 5:
                 return True
-            self.state_counts[current_state] += 1
+            self.stateCounts[current_state] += 1
         else:
-            self.state_counts[current_state] = 1
+            self.stateCounts[current_state] = 1
         return False
 
     
