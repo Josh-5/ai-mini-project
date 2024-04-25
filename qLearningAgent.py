@@ -9,6 +9,7 @@
 # John DeNero (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
 # For more info, see http://inst.eecs.berkeley.edu/~cs188/sp09/pacman.html
 
+import json
 import random
 import time
 from pytience.cmd.klondike import KlondikeCmd, KlondikeGame
@@ -25,7 +26,7 @@ class KlondikeController(KlondikeCmd):
     def __init__(self):
         KlondikeCmd.__init__(self)
         self.replenishFlag = 0  # Indicates how many times we have replenished the deck/stock
-        self.stateCounts = {}
+        self.stateCounts = util.Counter()
     
     """ Helper method to check whether we can move a source card to a destination card"""
     def canMove(self, src: deck.Card, dest: deck.Card, destIsFoundation=False) -> bool:
@@ -37,6 +38,9 @@ class KlondikeController(KlondikeCmd):
     """ Helper method to check whether a card is Ace """
     def isAce(self, card: deck.Card) -> bool:
         return CARD_VALUES[card.pip] == 1
+    
+    def isKing(self, card: deck.Card) -> bool:
+        return CARD_VALUES[card.pip] == 13
     
     def getLegalActions(self: KlondikeCmd):
         legalActions: list[str] = []
@@ -61,7 +65,10 @@ class KlondikeController(KlondikeCmd):
         
             # Tries putting card from waste to tableu piles
             for i, tableauPile in enumerate(self.klondike.tableau.piles):
-                if self.canMove(topWaste, tableauPile[-1], False):
+                if tableauPile == []:
+                    if self.isKing(topWaste):
+                        legalActions.append(f"W {i}")
+                elif self.canMove(topWaste, tableauPile[-1], False):
                     legalActions.append(f"W {i}")
 
         # Moves cards from foundation piles 
@@ -71,6 +78,8 @@ class KlondikeController(KlondikeCmd):
                 continue
             # Move to tableau piles if applicable
             for j, tableauPile in enumerate(self.klondike.tableau.piles):
+                if tableauPile == []:
+                    continue
                 topFoundation: deck.Card = foundationPile[-1]
                 topTableau: deck.Card = tableauPile[-1]
                 if self.canMove(topFoundation, topTableau, False):
@@ -78,28 +87,34 @@ class KlondikeController(KlondikeCmd):
 
         # Moves cards from tableau piles
         for i, tableauPile in enumerate(self.klondike.tableau.piles):
+            if len(tableauPile) == 0:
+                continue
+            
+            print(f"{i}: {tableauPile}")
             j = len(tableauPile) - 1
             while j >= 0:
+                print(tableauPile)
+                print(j)
                 tableauCard = tableauPile[j]
                 # Stops completely for the pile once a concealed card is hit
                 if tableauCard.is_concealed:
                     break
 
-                # Possible moves to foundation piles
-
-           
-                foundationPile = self.klondike.foundation.piles[tableauCard.suit]
-                
-                if self.isAce(tableauCard) or foundationPile != [] and self.canMove(tableauCard, foundationPile[-1], True):
-                    legalActions.append(f"T {i} {j} F")
-                
+                # Only when it is the top card do you try moving to foundation piles
+                if j == len(tableauPile) - 1:
+                    # Possible moves to foundation piles
+                    foundationPile = self.klondike.foundation.piles[tableauCard.suit]
+                    
+                    if self.isAce(tableauCard) or foundationPile != [] and self.canMove(tableauCard, foundationPile[-1], True):
+                        legalActions.append(f"T {i} {j} F")
+                    
 
                 # Possible moves to another tableau pile
-                for k, tableauPile in enumerate(self.klondike.tableau.piles):
+                for k, tableauPile2 in enumerate(self.klondike.tableau.piles):
                     # Skips the same pile
-                    if k == i:
+                    if k == i or tableauPile2 == []:
                         continue
-                    if self.canMove(tableauCard, tableauPile[-1], False):
+                    if self.canMove(tableauCard, tableauPile2[-1], False):
                         legalActions.append(f"T {i} {j} {k}")
                 j -= 1
                     
@@ -118,7 +133,7 @@ class KlondikeController(KlondikeCmd):
             self.klondike.deal()
 
         elif (parsedAction[0] == "F"):
-            self.klondike.select_foundation(int(parsedAction[1]), int(parsedAction[2]))
+            self.klondike.select_foundation(deck.Suit(parsedAction[1]), int(parsedAction[2]))
         elif (parsedAction[0] == "W"):
             if parsedAction[1] == "F":
                 self.klondike.select_waste(None)
@@ -134,17 +149,16 @@ class KlondikeController(KlondikeCmd):
         elif (parsedAction[0] == "S"):
             self.klondike.solve()
 
-    def hasLost(self: KlondikeCmd):
-        if (self.replenishFlag == 2) or not self.getLegalActions():
+    def hasLost(self: KlondikeCmd, allowedRepetitions=300):
+        if self.replenishFlag == 2:
             return True
         
-        current_state = (self.klondike.stock, self.klondike.waste, self.klondike.foundation, self.klondike.tableau)
-        if current_state in self.stateCounts.keys():
-            if self.stateCounts[current_state] >= 5:
-                return True
-            self.stateCounts[current_state] += 1
-        else:
-            self.stateCounts[current_state] = 1
+        currentState = json.dumps(self.klondike.dump())
+        
+        if self.stateCounts[currentState] >= allowedRepetitions:
+            return True
+        self.stateCounts[currentState] += 1
+
         return False
 
     
@@ -170,19 +184,21 @@ class SimpleExtractor(FeatureExtractor):
     def getFeatures(self, state, action):
         gameUI = KlondikeController()
         game = KlondikeGame(game_dump=state)
+        print("\n\nfeature extract\n")
+        print(game.foundation.dump())
+        print(game.tableau.dump())
+        print(action)
+        print("\n\n\n")
         gameUI.performAction(action, game)
         features = util.Counter()
         tableaus = game.tableau.piles
         features["bias"] = 1.0
-
 
         hiddenCardsPre = 0.0
         for tableau in tableaus:
             for card in tableau:
                 if not card.is_revealed:
                     hiddenCardsPre += 1.0
-
-        # util.doAction(, action)
 
         hiddenCards = 0.0
         maxHiddenCards = 0.0
@@ -234,6 +250,9 @@ class QLearningAgent():
         self.weights = util.Counter()
         self.legalActions = legalActions
   
+    def setLegalActions(self, actions):
+        self.legalActions = actions
+
     def getQValue(self, state, action):
         """
         Should return Q(state,action)

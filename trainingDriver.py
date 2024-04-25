@@ -51,6 +51,7 @@ class TrainingDriver:
             self.agent.stopEpisode()
             # Resets the game
             self.control.do_new("")
+            self.agent.setLegalActions(self.control.getLegalActions())
 
         print(f"Training completed, won {winCount}/{self.episodesCount} games")
 
