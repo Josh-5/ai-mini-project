@@ -10,7 +10,7 @@ from qLearningAgent import KlondikeController
 # from util import doAction, raiseNotDefined
 
 class TrainingDriver:
-    def __init__(self, episodesCount=10000, testCount=1000):
+    def __init__(self, episodesCount=5000, testCount=1000):
         
         self.control = KlondikeController()
         self.agent = QLearningAgent(numTraining=episodesCount, legalActions=self.control.getLegalActions())
@@ -40,10 +40,12 @@ class TrainingDriver:
                 
                 # check end game
                 if self.control.hasLost():
+                    print("LOST GAME")
                     break
 
                 if self.control.klondike.is_solved():
                     winCount += 1
+                    print("WON GAME")
                     break
 
             self.agent.stopEpisode()

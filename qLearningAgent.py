@@ -10,6 +10,7 @@
 # For more info, see http://inst.eecs.berkeley.edu/~cs188/sp09/pacman.html
 
 import json
+from math import inf
 import random
 import time
 from pytience.cmd.klondike import KlondikeCmd, KlondikeGame
@@ -27,6 +28,8 @@ class KlondikeController(KlondikeCmd):
         KlondikeCmd.__init__(self)
         self.replenishFlag = 0  # Indicates how many times we have replenished the deck/stock
         self.stateCounts = util.Counter()
+        self.actionCounts = util.Counter()
+        self.actionCycle = False
     
     """ Helper method to check whether we can move a source card to a destination card"""
     def canMove(self, src: deck.Card, dest: deck.Card, destIsFoundation=False) -> bool:
@@ -44,8 +47,9 @@ class KlondikeController(KlondikeCmd):
     
     def getLegalActions(self: KlondikeCmd):
         legalActions: list[str] = []
-
+        
         if self.klondike.is_solvable():
+            
             legalActions.append("S")
             return legalActions
         
@@ -123,6 +127,9 @@ class KlondikeController(KlondikeCmd):
         if game is not None:
             self.klondike = game
         parsedAction = action.split()
+        self.actionCounts[action] += 1
+        if self.actionCounts[action] >= 100:
+            self.actionCycle = True
 
         if (parsedAction[0] == "D"):
             # The klondike replenishes when there are still waste cards but no cards in deck/stock
@@ -147,7 +154,9 @@ class KlondikeController(KlondikeCmd):
         elif (parsedAction[0] == "S"):
             self.klondike.solve()
 
-    def hasLost(self: KlondikeCmd, allowedRepetitions=300):
+    def hasLost(self: KlondikeCmd, allowedRepetitions=100):
+        if self.actionCycle:
+            return True
         if self.replenishFlag == 2:
             return True
         
@@ -158,7 +167,13 @@ class KlondikeController(KlondikeCmd):
         self.stateCounts[currentState] += 1
 
         return False
-
+    
+    def do_new(self, _):
+        KlondikeCmd.do_new(self, _)
+        self.stateCounts = util.Counter()
+        self.replenishFlag = 0
+        self.actionCycle =False
+        self.actionCounts = util.Counter()
     
 class FeatureExtractor:
     def getFeatures(self, state, action):
@@ -210,16 +225,20 @@ class SimpleExtractor(FeatureExtractor):
             features["from-waste"] = 1.0
         elif action[0] == "D":
             features["from-stock"] = 1.0
-        features["total-hidden-cards"] = -float(hiddenCards)
-        features["max-hidden-cards"] = -float(maxHiddenCards)
-        features["revealed-hidden-cards"] = float(hiddenCardsPre - hiddenCards)
+
+        if game.is_solved():
+            features["solved"] = 1.0
+        features["total-hidden-cards"] = -float(hiddenCards) / 800.0
+        features["max-hidden-cards"] = -float(maxHiddenCards) / 800.0
+        if hiddenCardsPre != hiddenCards:
+            features["revealed-hidden-cards"] = 1.0
         # print(features)
         features.divideAll(10.0)
         return features
 
 
 class QLearningAgent():
-    def __init__(self, featExtractor=SimpleExtractor(), numTraining=100, epsilon=0.2, epsilonDecay=0.995, epsilonMin=0.01, alpha=1, gamma=1, legalActions=[]):
+    def __init__(self, featExtractor=SimpleExtractor(), numTraining=100, epsilon=1, epsilonDecay=0.995, epsilonMin=0.01, alpha=0.5, gamma=1, legalActions=[]):
         """
         actionFn: Function which takes a state and returns the list of legal actions
 
@@ -275,11 +294,13 @@ class QLearningAgent():
             return 0.0
         
         # Loop through all legal actions, find and return the greatest Q value
-        maxQ = -999999
+        qAction = []
         for action in legalActions:
+            
             q = self.getQValue(state, action)
-            if (q > maxQ):
-                maxQ = q
+            qAction.append((q, action))
+        
+        maxQ, _ = max(qAction)
         return maxQ
 
     def computeActionFromQValues(self, state):
@@ -298,12 +319,12 @@ class QLearningAgent():
         
         # The best action has the greatest Q value. 
         # Loop through all legal actions, find and return the action with the greatest Q value
-        bestQ = -999999
+        qAction = []
         for action in legalActions:
             q = self.getQValue(state, action)
-            if (q > bestQ):
-                bestAction = action
-                bestQ = q
+            qAction.append((q, action))
+            
+        _, bestAction = max(qAction)
         return bestAction
         
     def getAction(self, state):
@@ -321,12 +342,10 @@ class QLearningAgent():
         action = None
         "*** YOUR CODE HERE ***"
         # If there are no legal actions, return None
-        if (len(legalActions) == 0):
-            return None
-        
+   
         # Pick the best move
         action = self.computeActionFromQValues(state)
-
+        print(action)
         # Epsilon chance of picking a random move
         if (util.flipCoin(self.epsilon)):
             action = random.choice(legalActions)
