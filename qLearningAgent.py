@@ -89,12 +89,10 @@ class KlondikeController(KlondikeCmd):
         for i, tableauPile in enumerate(self.klondike.tableau.piles):
             if len(tableauPile) == 0:
                 continue
-            
-            print(f"{i}: {tableauPile}")
+    
             j = len(tableauPile) - 1
             while j >= 0:
-                print(tableauPile)
-                print(j)
+
                 tableauCard = tableauPile[j]
                 # Stops completely for the pile once a concealed card is hit
                 if tableauCard.is_concealed:
@@ -183,47 +181,45 @@ class SimpleExtractor(FeatureExtractor):
 
     def getFeatures(self, state, action):
         gameUI = KlondikeController()
-        game = KlondikeGame(game_dump=state)
-        print("\n\nfeature extract\n")
-        print(game.foundation.dump())
-        print(game.tableau.dump())
-        print(action)
-        print("\n\n\n")
-        gameUI.performAction(action, game)
+        game = KlondikeGame(game_dump=state)        
         features = util.Counter()
+
         tableaus = game.tableau.piles
-        features["bias"] = 1.0
-
-        hiddenCardsPre = 0.0
+        hiddenCardsPre = 0
         for tableau in tableaus:
             for card in tableau:
-                if not card.is_revealed:
-                    hiddenCardsPre += 1.0
+                if card.is_concealed:
+                    hiddenCardsPre += 1
 
-        hiddenCards = 0.0
-        maxHiddenCards = 0.0
+        gameUI.performAction(action, game)
+        tableaus = game.tableau.piles
+        hiddenCards = 0
+        maxHiddenCards = 0
         for tableau in tableaus:
-            pileHiddenCards = 0.0
+            pileHiddenCards = 0
             for card in tableau:
-                if not card.is_revealed:
-                    hiddenCards += 1.0
-                    pileHiddenCards += 1.0
+                if card.is_concealed:
+                    hiddenCards += 1
+                    pileHiddenCards += 1
             if maxHiddenCards < pileHiddenCards:
                 maxHiddenCards = pileHiddenCards
-
-        features["total hidden cards"] = hiddenCards
-        features["max hidden cards"] = maxHiddenCards
-        features["reveal hidden cards"] = hiddenCards < hiddenCardsPre
-
         
-
-
+        if action[-1] == "F":
+            features["to-foundation"] = 1.0
+        if action[0] == "W":
+            features["from-waste"] = 1.0
+        elif action[0] == "D":
+            features["from-stock"] = 1.0
+        features["total-hidden-cards"] = -float(hiddenCards)
+        features["max-hidden-cards"] = -float(maxHiddenCards)
+        features["revealed-hidden-cards"] = float(hiddenCardsPre - hiddenCards)
+        # print(features)
         features.divideAll(10.0)
         return features
 
 
 class QLearningAgent():
-    def __init__(self, featExtractor=SimpleExtractor(), numTraining=100, epsilon=0.5, epsilonDecay=0.995, epsilonMin=0.01, alpha=0.5, gamma=1, legalActions=[]):
+    def __init__(self, featExtractor=SimpleExtractor(), numTraining=100, epsilon=0.2, epsilonDecay=0.995, epsilonMin=0.01, alpha=1, gamma=1, legalActions=[]):
         """
         actionFn: Function which takes a state and returns the list of legal actions
 

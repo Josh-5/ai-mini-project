@@ -10,7 +10,7 @@ from qLearningAgent import KlondikeController
 # from util import doAction, raiseNotDefined
 
 class TrainingDriver:
-    def __init__(self, episodesCount=5000, testCount=1000):
+    def __init__(self, episodesCount=10000, testCount=1000):
         
         self.control = KlondikeController()
         self.agent = QLearningAgent(numTraining=episodesCount, legalActions=self.control.getLegalActions())
@@ -27,15 +27,13 @@ class TrainingDriver:
             while True:
                 prevState = self.control.klondike.dump()
                 prevScore = self.control.klondike.score
+                
                 action = self.agent.getAction(prevState)
-                print(prevState)
-                print("\n\n\n")
-                print(action)
-                print("\n\n\n")
+            
                 # execute action
                 self.control.performAction(action)
                 deltaReward = self.control.klondike.score - prevScore
-
+                # print(deltaReward)
                 # observe the transition and learn
                 self.agent.observeTransition(
                     prevState, action, self.control.klondike.dump(), deltaReward, self.control.getLegalActions())
@@ -54,7 +52,7 @@ class TrainingDriver:
             self.agent.setLegalActions(self.control.getLegalActions())
 
         print(f"Training completed, won {winCount}/{self.episodesCount} games")
-
+        print(self.agent.weights)
         
         self.testAgent()
         
