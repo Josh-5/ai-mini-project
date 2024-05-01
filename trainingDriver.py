@@ -7,10 +7,10 @@ import copy
 from pytience.cmd.klondike import KlondikeCmd
 from qLearningAgent import QLearningAgent
 from qLearningAgent import KlondikeController
-# from util import doAction, raiseNotDefined
+import time
 
 class TrainingDriver:
-    def __init__(self, episodesCount=5000, testCount=1000):
+    def __init__(self, episodesCount=1, testCount=1):
         
         self.control = KlondikeController()
         self.agent = QLearningAgent(numTraining=episodesCount, legalActions=self.control.getLegalActions())
@@ -58,8 +58,7 @@ class TrainingDriver:
         
         self.testAgent()
         
-
-    # TODO implement
+        
     def testAgent(self):
         print("Testing trained agent...")
         winCount = 0
@@ -67,6 +66,27 @@ class TrainingDriver:
             # do testing on fresh games without training (epsilon and alpha values should be 0)
             pass
         print("Testing completed, won {winCount}/{self.testCount} games")
+        print("Final game\n\n")
+        self.control.do_new("")
+        self.control.print_game()
+        while True:
+            prevState = self.control.klondike.dump()
+            self.agent.setLegalActions(self.control.getLegalActions())
+            action = self.agent.getAction(prevState)
+        
+            # execute action
+            self.control.performAction(action)
+            time.sleep(1)
+            self.control.print_game()
+            # check end game
+            if self.control.hasLost():
+                print("LOST GAME")
+                break
+
+            if self.control.klondike.is_solved():
+                winCount += 1
+                print("WON GAME")
+                break
 
     
 if __name__ == "__main__":

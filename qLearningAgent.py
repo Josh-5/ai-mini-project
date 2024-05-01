@@ -20,9 +20,6 @@ from pytience.games.solitaire import CARD_VALUES
 
 import util
 
-
-
-
 class KlondikeController(KlondikeCmd):
     def __init__(self):
         KlondikeCmd.__init__(self)
@@ -110,7 +107,6 @@ class KlondikeController(KlondikeCmd):
                     if self.isAce(tableauCard) or foundationPile != [] and self.canMove(tableauCard, foundationPile[-1], True):
                         legalActions.append(f"T {i} {j} F")
                     
-
                 # Possible moves to another tableau pile
                 for k, tableauPile2 in enumerate(self.klondike.tableau.piles):
                     # Skips the same pile
@@ -345,7 +341,7 @@ class QLearningAgent():
    
         # Pick the best move
         action = self.computeActionFromQValues(state)
-        print(action)
+        # print(action)
         # Epsilon chance of picking a random move
         if (util.flipCoin(self.epsilon)):
             action = random.choice(legalActions)
@@ -411,12 +407,3 @@ class QLearningAgent():
 
     def isInTesting(self):
         return not self.isInTraining()
-
-
-def main():
-    game = KlondikeController()
-    print(game.klondike.dump())
-    print(f"\n\n\n{game.getLegalActions()}")
-
-if __name__ == "__main__":
-    main()
